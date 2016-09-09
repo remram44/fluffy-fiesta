@@ -14,6 +14,7 @@ use piston::input::*;
 use glutin_window::GlutinWindow;
 use conrod::{Labelable, Positionable, Sizeable, Widget};
 
+mod map;
 mod vecmath;
 
 pub struct App {

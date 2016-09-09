@@ -16,4 +16,8 @@ conrod = "0.43.*"
 piston_window = "0.52"
 
 # Concrete graphics
-pistoncore-glutin_window = "0.30.*"
+sdl2 = "*"
+pistoncore-sdl2_window = "0.34.*"
+
+[features]
+use_sdl2_mac_framework = ["sdl2/use_mac_framework"]

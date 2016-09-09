@@ -1,18 +1,18 @@
 #[macro_use] extern crate conrod;
-extern crate glutin_window;
 extern crate graphics;
 extern crate piston;
 extern crate piston_window;
+extern crate sdl2_window;
 extern crate vecmath as vecmath_lib;
 
 use std::path::Path;
 
+use conrod::{Labelable, Positionable, Sizeable, Widget};
 use piston::window::{AdvancedWindow, WindowSettings};
 use piston_window::{Context, G2d, OpenGL, PistonWindow};
 use piston::event_loop::*;
 use piston::input::*;
-use glutin_window::GlutinWindow;
-use conrod::{Labelable, Positionable, Sizeable, Widget};
+use sdl2_window::Sdl2Window;
 
 mod map;
 mod vecmath;
@@ -56,8 +56,8 @@ fn main() {
     // Change this to OpenGL::V2_1 if not working.
     let opengl = OpenGL::V3_2;
 
-    // Create an Glutin window.
-    let mut window: PistonWindow<GlutinWindow> = WindowSettings::new(
+    // Create an SDL2 window.
+    let mut window: PistonWindow<Sdl2Window> = WindowSettings::new(
             "fluffy-fiesta",
             [WIDTH, HEIGHT]
         )

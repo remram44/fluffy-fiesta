@@ -1,8 +1,9 @@
+#[macro_use] extern crate conrod;
+extern crate glutin_window;
+extern crate graphics;
 extern crate piston;
 extern crate piston_window;
-extern crate graphics;
-extern crate glutin_window;
-#[macro_use] extern crate conrod;
+extern crate vecmath as vecmath_lib;
 
 use std::path::Path;
 
@@ -12,6 +13,8 @@ use piston::event_loop::*;
 use piston::input::*;
 use glutin_window::GlutinWindow;
 use conrod::{Labelable, Positionable, Sizeable, Widget};
+
+mod vecmath;
 
 pub struct App {
     rotation: f64,  // Rotation for the square.

@@ -7,9 +7,13 @@ authors = ["Remi Rampin <remirampin@gmail.com>"]
 name = "client"
 
 [dependencies]
+vecmath = "0.2.*"
+
+# Abstract graphics
 piston = "0.25.*"
 piston2d-graphics = "0.17.*"
 conrod = "0.43.*"
 piston_window = "0.52"
 
+# Concrete graphics
 pistoncore-glutin_window = "0.30.*"

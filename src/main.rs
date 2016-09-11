@@ -28,6 +28,8 @@ enum StateTransition {
     Replace(Box<GameState>),
     /// Keep this state, but pause it and push the state on top of the stack.
     Push(Box<GameState>),
+    /// Quit the game completely.
+    Quit,
 }
 
 /// A state the game can be in.
@@ -109,6 +111,7 @@ impl App {
                 StateTransition::Push(state) => {
                     self.states.push(state);
                 }
+                StateTransition::Quit => break,
             }
         }
     }
@@ -153,49 +156,16 @@ fn main() {
     app.run();
 }
 
-widget_ids!(struct GameWidgetIds { canvas, resume, quit });
-
 struct Game {
     rotation: f64,  // Rotation for the square.
-    ui: conrod::Ui,
-    widget_ids: GameWidgetIds,
     capture: bool,
-    ui_on: bool,
-    // FIXME: Spelling out gfx_device_gl (and direct dep) shouldn't be necessary
-    image_map: conrod::image::Map<piston_window::Texture<gfx_device_gl::Resources>>,
-    text_texture_cache: conrod::backend::piston_window::GlyphCache,
 }
 
 impl Game {
     fn new(resources: &mut Resources) -> Game {
-        // Construct our `Ui`.
-        let mut ui = conrod::UiBuilder::new().build();
-
-        // Generate the widget identifiers.
-        let ids = GameWidgetIds::new(ui.widget_id_generator());
-
-        // Add a `Font` to the `Ui`'s `font::Map` from file.
-        let font_path = Path::new("assets/NotoSans-Regular.ttf");
-        assert!(font_path.exists());
-        ui.fonts.insert_from_file(font_path).unwrap();
-
-        // Create a texture to use for efficiently caching text on the GPU.
-        let text_texture_cache =
-            conrod::backend::piston_window::GlyphCache::new(&mut resources.window,
-                                                            resources.width,
-                                                            resources.height);
-
-        // The image map describing each of our widget->image mappings (in our case, none).
-        let image_map = conrod::image::Map::new();
-
         Game {
             rotation: 0.0,
-            ui: ui,
-            widget_ids: ids,
             capture: false,
-            ui_on: false,
-            image_map: image_map,
-            text_texture_cache: text_texture_cache,
         }
     }
 }
@@ -204,40 +174,6 @@ impl GameState for Game {
     fn handle_event(&mut self, event: &piston::input::Event<piston::input::Input>,
                     resources: &mut Resources) -> StateTransition
     {
-        // Convert the piston event to a conrod event.
-        if let Some(ce) = conrod::backend::piston_window::convert_event(event.clone(), &mut resources.window) {
-            self.ui.handle_event(ce);
-        }
-
-        if self.ui_on {
-            let ui = &mut self.ui.set_widgets();
-
-            // Create a background canvas upon which we'll place the button.
-            conrod::widget::Canvas::new().floating(true).w_h(100.0, 70.0).pad(10.0).middle()
-                .set(self.widget_ids.canvas, ui);
-
-            // Draw the buttons.
-            if conrod::widget::Button::new()
-                .mid_top_of(self.widget_ids.canvas)
-                .w_h(80.0, 20.0)
-                .label("Resume")
-                .set(self.widget_ids.resume, ui)
-                .was_clicked()
-            {
-                self.ui_on = false;
-            }
-
-            if conrod::widget::Button::new()
-                .down(10.0)
-                .w_h(80.0, 20.0)
-                .label("Quit")
-                .set(self.widget_ids.quit, ui)
-                .was_clicked()
-            {
-                return StateTransition::End;
-            }
-        }
-
         if let Some(Button::Mouse(button)) = event.press_args() {
             println!("Pressed mouse button '{:?}'", button);
         }
@@ -246,12 +182,8 @@ impl GameState for Game {
             println!("Pressed key '{:?}'", key);
             if key == Key::Escape {
                 println!("ui on");
-                self.ui_on = true;
-                if self.capture {
-                    self.capture = false;
-                    resources.window.set_capture_cursor(false);
-                }
-            } else if !self.ui_on && key == Key::C {
+                return StateTransition::Push(Box::new(PauseMenu::new(resources)));
+            } else if key == Key::C {
                 self.capture = !self.capture;
                 resources.window.set_capture_cursor(self.capture);
                 println!("capture {}", if self.capture { "on" } else { "off" });
@@ -287,14 +219,109 @@ impl GameState for Game {
 
         // Draw a box rotating around the middle of the screen.
         rectangle(RED, square, transform, g);
+    }
 
-        if self.ui_on {
-            let primitives = self.ui.draw();
-            fn texture_from_image<T>(img: &T) -> &T { img };
-            conrod::backend::piston_window::draw(c, g, primitives,
-                                                 &mut self.text_texture_cache,
-                                                 &self.image_map,
-                                                 texture_from_image);
+    fn pause(&mut self, resources: &mut Resources) {
+        if self.capture {
+            resources.window.set_capture_cursor(false);
         }
+    }
+
+    fn resume(&mut self, resources: &mut Resources) {
+        if self.capture {
+            resources.window.set_capture_cursor(self.capture);
+        }
+    }
+}
+
+widget_ids!(struct GameWidgetIds { canvas, resume, quit });
+
+struct PauseMenu {
+    ui: conrod::Ui,
+    widget_ids: GameWidgetIds,
+    // FIXME: Spelling out gfx_device_gl (and direct dep) shouldn't be necessary
+    image_map: conrod::image::Map<piston_window::Texture<gfx_device_gl::Resources>>,
+    text_texture_cache: conrod::backend::piston_window::GlyphCache,
+}
+
+impl PauseMenu {
+    fn new(resources: &mut Resources) -> PauseMenu {
+        // Construct our `Ui`.
+        let mut ui = conrod::UiBuilder::new().build();
+
+        // Generate the widget identifiers.
+        let ids = GameWidgetIds::new(ui.widget_id_generator());
+
+        // Add a `Font` to the `Ui`'s `font::Map` from file.
+        let font_path = Path::new("assets/NotoSans-Regular.ttf");
+        assert!(font_path.exists());
+        ui.fonts.insert_from_file(font_path).unwrap();
+
+        // Create a texture to use for efficiently caching text on the GPU.
+        let text_texture_cache =
+            conrod::backend::piston_window::GlyphCache::new(&mut resources.window,
+                                                            resources.width,
+                                                            resources.height);
+
+        // The image map describing each of our widget->image mappings (in our case, none).
+        let image_map = conrod::image::Map::new();
+
+        PauseMenu {
+            ui: ui,
+            widget_ids: ids,
+            image_map: image_map,
+            text_texture_cache: text_texture_cache,
+        }
+    }
+}
+
+impl GameState for PauseMenu {
+    fn handle_event(&mut self, event: &piston::input::Event<piston::input::Input>,
+                    resources: &mut Resources) -> StateTransition
+    {
+        // Convert the piston event to a conrod event.
+        if let Some(ce) = conrod::backend::piston_window::convert_event(event.clone(), &mut resources.window) {
+            self.ui.handle_event(ce);
+        }
+
+        let ui = &mut self.ui.set_widgets();
+
+        // Create a background canvas upon which we'll place the button.
+        conrod::widget::Canvas::new().floating(true).w_h(100.0, 70.0).pad(10.0).middle()
+            .set(self.widget_ids.canvas, ui);
+
+        // Draw the buttons.
+        if conrod::widget::Button::new()
+            .mid_top_of(self.widget_ids.canvas)
+            .w_h(80.0, 20.0)
+            .label("Resume")
+            .set(self.widget_ids.resume, ui)
+            .was_clicked()
+        {
+            StateTransition::End
+        } else if conrod::widget::Button::new()
+            .down(10.0)
+            .w_h(80.0, 20.0)
+            .label("Quit")
+            .set(self.widget_ids.quit, ui)
+            .was_clicked()
+        {
+            StateTransition::Quit
+        } else {
+            StateTransition::Continue
+        }
+    }
+
+    fn update(&mut self, df: f64) -> StateTransition {
+        StateTransition::Continue
+    }
+
+    fn draw(&mut self, c: Context, g: &mut G2d) {
+        let primitives = self.ui.draw();
+        fn texture_from_image<T>(img: &T) -> &T { img };
+        conrod::backend::piston_window::draw(c, g, primitives,
+                                             &mut self.text_texture_cache,
+                                             &self.image_map,
+                                             texture_from_image);
     }
 }

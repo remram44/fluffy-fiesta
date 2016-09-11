@@ -1,4 +1,5 @@
 #[macro_use] extern crate conrod;
+extern crate gfx_device_gl;
 extern crate graphics;
 extern crate piston;
 extern crate piston_window;
@@ -17,12 +18,244 @@ use sdl2_window::Sdl2Window;
 mod map;
 mod vecmath;
 
-pub struct App {
-    rotation: f64,  // Rotation for the square.
+/// A transition requested by a game state.
+enum StateTransition {
+    /// Stay on this state.
+    Continue,
+    /// End this state and pop it from the stack.
+    End,
+    /// Pop this state and replace it with this new state.
+    Replace(Box<GameState>),
+    /// Keep this state, but pause it and push the state on top of the stack.
+    Push(Box<GameState>),
+}
+
+/// A state the game can be in.
+///
+/// The application consists of a stack of states, that can each push other
+/// states on the stack and/or pop themselves.
+/// Examples of states are the main menu, the character selection, or the game
+/// itself; starting the game finishes the character selection, but the main
+/// menu remains accessible.
+trait GameState {
+    fn handle_event(&mut self, event: &piston::input::Event<piston::input::Input>, resources: &mut Resources) {}
+    fn update(&mut self, dt: f64) -> StateTransition;
+    fn draw(&mut self, c: Context, g: &mut G2d);
+    fn pause(&mut self) {}
+    fn resume(&mut self) {}
+}
+
+struct Resources {
+    window: PistonWindow<Sdl2Window>,
+    width: u32,
+    height: u32,
+}
+
+struct App {
+    states: Vec<Box<GameState>>,
+    resources: Resources,
 }
 
 impl App {
-    fn render(&mut self, c: &Context, g: &mut G2d) {
+    fn new() -> App {
+        let width = 200;
+        let height = 200;
+
+        // Change this to OpenGL::V2_1 if not working.
+        let opengl = OpenGL::V3_2;
+
+        // Create an SDL2 window.
+        let window: PistonWindow<Sdl2Window> = WindowSettings::new(
+                "fluffy-fiesta",
+                [width, height]
+            )
+            .opengl(opengl)
+            .build()
+            .unwrap();
+
+        let mut app = App {
+            states: Vec::new(),
+            resources: Resources {
+                window: window,
+            width: width,
+            height: height,
+            },
+        };
+        let game = Game::new(&mut app.resources);
+        app.states.push(Box::new(game));
+        app
+    }
+
+    fn run(&mut self) {
+        loop {
+            let transition: StateTransition = if let Some(state) = self.states.last_mut() {
+                Self::handle_state(&mut self.resources, state)
+            } else {
+                break
+            };
+            match transition {
+                StateTransition::Continue => panic!("App::run() got Transition::Continue"),
+                StateTransition::End => {
+                    self.states.pop().expect("Transition::End with no states");
+                }
+                StateTransition::Replace(state) => {
+                    self.states.pop().expect("Transition::Replace with no states");
+                    self.states.push(state);
+                }
+                StateTransition::Push(state) => {
+                    self.states.push(state);
+                }
+            }
+        }
+    }
+
+    fn handle_state(resources: &mut Resources, state: &mut Box<GameState>) -> StateTransition {
+        state.resume();
+
+        let mut events = resources.window.events();
+        while let Some(event) = events.next(&mut resources.window) {
+            // Handle generic event
+            state.handle_event(&event, resources);
+
+            // Call update method
+            if let Some(u) = event.update_args() {
+                let transition = state.update(u.dt);
+                match transition {
+                    StateTransition::Continue => {},
+                    t => return t,
+                }
+            }
+
+            // Call draw method
+            resources.window.draw_2d(&event, |c, g| state.draw(c, g));
+        }
+        StateTransition::End
+    }
+}
+
+fn main() {
+    let mut app = App::new();
+    app.run();
+}
+
+widget_ids!(struct GameWidgetIds { canvas, resume, quit });
+
+struct Game {
+    rotation: f64,  // Rotation for the square.
+    ui: conrod::Ui,
+    widget_ids: GameWidgetIds,
+    capture: bool,
+    ui_on: bool,
+    quit: bool,
+    // FIXME: Spelling out gfx_device_gl (and direct dep) shouldn't be necessary
+    image_map: conrod::image::Map<piston_window::Texture<gfx_device_gl::Resources>>,
+    text_texture_cache: conrod::backend::piston_window::GlyphCache,
+}
+
+impl Game {
+    fn new(resources: &mut Resources) -> Game {
+        // Construct our `Ui`.
+        let mut ui = conrod::UiBuilder::new().build();
+
+        // Generate the widget identifiers.
+        let ids = GameWidgetIds::new(ui.widget_id_generator());
+
+        // Add a `Font` to the `Ui`'s `font::Map` from file.
+        let font_path = Path::new("assets/NotoSans-Regular.ttf");
+        assert!(font_path.exists());
+        ui.fonts.insert_from_file(font_path).unwrap();
+
+        // Create a texture to use for efficiently caching text on the GPU.
+        let text_texture_cache =
+            conrod::backend::piston_window::GlyphCache::new(&mut resources.window,
+                                                            resources.width,
+                                                            resources.height);
+
+        // The image map describing each of our widget->image mappings (in our case, none).
+        let image_map = conrod::image::Map::new();
+
+        Game {
+            rotation: 0.0,
+            ui: ui,
+            widget_ids: ids,
+            capture: false,
+            ui_on: false,
+            quit: false,
+            image_map: image_map,
+            text_texture_cache: text_texture_cache,
+        }
+    }
+}
+
+impl GameState for Game {
+    fn handle_event(&mut self, event: &piston::input::Event<piston::input::Input>, resources: &mut Resources) {
+        // Convert the piston event to a conrod event.
+        if let Some(ce) = conrod::backend::piston_window::convert_event(event.clone(), &mut resources.window) {
+            self.ui.handle_event(ce);
+        }
+
+        if self.ui_on {
+            let ui = &mut self.ui.set_widgets();
+
+            // Create a background canvas upon which we'll place the button.
+            conrod::widget::Canvas::new().floating(true).w_h(100.0, 70.0).pad(10.0).middle()
+                .set(self.widget_ids.canvas, ui);
+
+            // Draw the buttons.
+            if conrod::widget::Button::new()
+                .mid_top_of(self.widget_ids.canvas)
+                .w_h(80.0, 20.0)
+                .label("Resume")
+                .set(self.widget_ids.resume, ui)
+                .was_clicked()
+            {
+                self.ui_on = false;
+            }
+
+            if conrod::widget::Button::new()
+                .down(10.0)
+                .w_h(80.0, 20.0)
+                .label("Quit")
+                .set(self.widget_ids.quit, ui)
+                .was_clicked()
+            {
+                self.quit = true;
+            }
+        }
+
+        if let Some(Button::Mouse(button)) = event.press_args() {
+            println!("Pressed mouse button '{:?}'", button);
+        }
+
+        if let Some(Button::Keyboard(key)) = event.press_args() {
+            println!("Pressed key '{:?}'", key);
+            if key == Key::Escape {
+                println!("ui on");
+                self.ui_on = true;
+                if self.capture {
+                    self.capture = false;
+                    resources.window.set_capture_cursor(false);
+                }
+            } else if !self.ui_on && key == Key::C {
+                self.capture = !self.capture;
+                resources.window.set_capture_cursor(self.capture);
+                println!("capture {}", if self.capture { "on" } else { "off" });
+            }
+        }
+    }
+
+    fn update(&mut self, dt: f64) -> StateTransition {
+        // Rotate 2 radians per second.
+        self.rotation += 2.0 * dt;
+
+        if self.quit {
+            StateTransition::End
+        } else {
+            StateTransition::Continue
+        }
+    }
+
+    fn draw(&mut self, c: Context, g: &mut G2d) {
         use graphics::*;
 
         const GREEN: [f32; 4] = [0.0, 1.0, 0.0, 1.0];
@@ -41,128 +274,14 @@ impl App {
 
         // Draw a box rotating around the middle of the screen.
         rectangle(RED, square, transform, g);
-    }
 
-    fn update(&mut self, args: &UpdateArgs) {
-        // Rotate 2 radians per second.
-        self.rotation += 2.0 * args.dt;
-    }
-}
-
-fn main() {
-    const WIDTH: u32 = 200;
-    const HEIGHT: u32 = 200;
-
-    // Change this to OpenGL::V2_1 if not working.
-    let opengl = OpenGL::V3_2;
-
-    // Create an SDL2 window.
-    let mut window: PistonWindow<Sdl2Window> = WindowSettings::new(
-            "fluffy-fiesta",
-            [WIDTH, HEIGHT]
-        )
-        .opengl(opengl)
-        .build()
-        .unwrap();
-
-    // Create a new game and run it.
-    let mut app = App {
-        rotation: 0.0,
-    };
-
-    // Construct our `Ui`.
-    let mut ui = conrod::UiBuilder::new().build();
-
-    // Generate the widget identifiers.
-    widget_ids!(struct Ids { canvas, resume, quit });
-    let ids = Ids::new(ui.widget_id_generator());
-
-    // Add a `Font` to the `Ui`'s `font::Map` from file.
-    let font_path = Path::new("assets/NotoSans-Regular.ttf");
-    assert!(font_path.exists());
-    ui.fonts.insert_from_file(font_path).unwrap();
-
-    // Create a texture to use for efficiently caching text on the GPU.
-    let mut text_texture_cache =
-        conrod::backend::piston_window::GlyphCache::new(&mut window, WIDTH, HEIGHT);
-
-    // The image map describing each of our widget->image mappings (in our case, none).
-    let image_map = conrod::image::Map::new();
-
-    let mut capture = false;
-    let mut ui_on = false;
-
-    let mut events = window.events();
-    while let Some(e) = events.next(&mut window) {
-        // Draw the app and the ui.
-        window.draw_2d(&e, |c, g| {
-            app.render(&c, g);
-
-            if ui_on {
-                let primitives = ui.draw();
-                fn texture_from_image<T>(img: &T) -> &T { img };
-                conrod::backend::piston_window::draw(c, g, primitives,
-                                                     &mut text_texture_cache,
-                                                     &image_map,
-                                                     texture_from_image);
-            }
-        });
-
-        // Convert the piston event to a conrod event.
-        if let Some(ce) = conrod::backend::piston_window::convert_event(e.clone(), &window) {
-            ui.handle_event(ce);
-        }
-
-        if let Some(u) = e.update_args() {
-            app.update(&u);
-
-            if ui_on {
-                let ui = &mut ui.set_widgets();
-
-                // Create a background canvas upon which we'll place the button.
-                conrod::widget::Canvas::new().floating(true).w_h(100.0, 70.0).pad(10.0).middle().set(ids.canvas, ui);
-
-                // Draw the buttons.
-                if conrod::widget::Button::new()
-                    .mid_top_of(ids.canvas)
-                    .w_h(80.0, 20.0)
-                    .label("Resume")
-                    .set(ids.resume, ui)
-                    .was_clicked()
-                {
-                    ui_on = false;
-                }
-
-                if conrod::widget::Button::new()
-                    .down(10.0)
-                    .w_h(80.0, 20.0)
-                    .label("Quit")
-                    .set(ids.quit, ui)
-                    .was_clicked()
-                {
-                    break;
-                }
-            }
-        }
-
-        if let Some(Button::Mouse(button)) = e.press_args() {
-            println!("Pressed mouse button '{:?}'", button);
-        }
-
-        if let Some(Button::Keyboard(key)) = e.press_args() {
-            println!("Pressed key '{:?}'", key);
-            if key == Key::Escape {
-                println!("ui on");
-                ui_on = true;
-                if capture {
-                    capture = false;
-                    window.set_capture_cursor(false);
-                }
-            } else if !ui_on && key == Key::C {
-                capture = !capture;
-                window.set_capture_cursor(capture);
-                println!("capture {}", if capture { "on" } else { "off" });
-            }
+        if self.ui_on {
+            let primitives = self.ui.draw();
+            fn texture_from_image<T>(img: &T) -> &T { img };
+            conrod::backend::piston_window::draw(c, g, primitives,
+                                                 &mut self.text_texture_cache,
+                                                 &self.image_map,
+                                                 texture_from_image);
         }
     }
 }

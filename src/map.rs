@@ -79,6 +79,7 @@ impl EntityDefinition {
 pub struct MapFactory {
     width: usize,
     height: usize,
+    nb_players: usize,
     tiletypes: Vec<TileType>,
     tiles: Vec<Tile>,
     entities: Vec<EntityDefinition>,
@@ -114,6 +115,7 @@ impl MapFactory {
         MapFactory {
             width: 100,
             height: 100,
+            nb_players: 4,
             tiletypes: vec![
                 TileType {
                     color: [0.5, 0.5, 0.5, 1.0],
@@ -141,7 +143,24 @@ impl MapFactory {
                 },
             ],
             tiles: tiles,
-            entities: Vec::new(),
+            entities: vec![
+                EntityDefinition {
+                    type_id: "f.spawn".to_string(),
+                    position: [15.0, 1.0],
+                },
+                EntityDefinition {
+                    type_id: "f.spawn".to_string(),
+                    position: [25.0, 1.0],
+                },
+                EntityDefinition {
+                    type_id: "f.spawn".to_string(),
+                    position: [75.0, 1.0],
+                },
+                EntityDefinition {
+                    type_id: "f.spawn".to_string(),
+                    position: [85.0, 1.0],
+                },
+            ],
         }
     }
 

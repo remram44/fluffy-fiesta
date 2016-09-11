@@ -1,11 +1,14 @@
 #[macro_use] extern crate conrod;
+extern crate env_logger;
 extern crate gfx_device_gl;
 extern crate graphics;
+#[macro_use] extern crate log;
 extern crate piston;
 extern crate piston_window;
 extern crate sdl2_window;
 extern crate vecmath as vecmath_lib;
 
+use std::fmt::{Debug, Formatter};
 use std::path::Path;
 
 use conrod::{Labelable, Positionable, Sizeable, Widget};
@@ -39,7 +42,7 @@ enum StateTransition {
 /// Examples of states are the main menu, the character selection, or the game
 /// itself; starting the game finishes the character selection, but the main
 /// menu remains accessible.
-trait GameState {
+trait GameState : Debug {
     fn handle_event(&mut self, event: &piston::input::Event<piston::input::Input>,
                     resources: &mut Resources) -> StateTransition
     {
@@ -78,6 +81,7 @@ impl App {
             .opengl(opengl)
             .build()
             .unwrap();
+        info!("Window created");
 
         let mut app = App {
             states: Vec::new(),
@@ -89,6 +93,7 @@ impl App {
         };
         let game = Game::new(&mut app.resources);
         app.states.push(Box::new(game));
+        info!("Game state created");
         app
     }
 
@@ -102,21 +107,29 @@ impl App {
             match transition {
                 StateTransition::Continue => panic!("App::run() got Transition::Continue"),
                 StateTransition::End => {
-                    self.states.pop().expect("Transition::End with no states");
+                    let previous = self.states.pop().expect("Transition::End with no states");
+                    info!("Dropped {:?}", previous);
                 }
                 StateTransition::Replace(state) => {
-                    self.states.pop().expect("Transition::Replace with no states");
+                    let previous = self.states.pop().expect("Transition::Replace with no states");
+                    info!("Dropped {:?}", previous);
+                    info!("Created {:?}", state);
                     self.states.push(state);
                 }
                 StateTransition::Push(state) => {
+                    info!("Created {:?}", state);
                     self.states.push(state);
                 }
-                StateTransition::Quit => break,
+                StateTransition::Quit => {
+                    info!("Exiting...");
+                    break
+                },
             }
         }
     }
 
     fn handle_state(resources: &mut Resources, state: &mut Box<GameState>) -> StateTransition {
+        info!("Executing {:?}", state);
         state.resume(resources);
 
         let mut events = resources.window.events();
@@ -146,13 +159,17 @@ impl App {
             // Call draw method
             resources.window.draw_2d(&event, |c, g| state.draw(c, g));
         }
+        info!("Stopping {:?}", state);
         state.pause(resources);
         StateTransition::End
     }
 }
 
 fn main() {
+    env_logger::init().unwrap();
+    info!("Starting up...");
     let mut app = App::new();
+    info!("Running application");
     app.run();
 }
 
@@ -170,23 +187,28 @@ impl Game {
     }
 }
 
+impl Debug for Game {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        write!(f, "Game")
+    }
+}
+
 impl GameState for Game {
     fn handle_event(&mut self, event: &piston::input::Event<piston::input::Input>,
                     resources: &mut Resources) -> StateTransition
     {
         if let Some(Button::Mouse(button)) = event.press_args() {
-            println!("Pressed mouse button '{:?}'", button);
+            info!("Pressed mouse button '{:?}'", button);
         }
 
         if let Some(Button::Keyboard(key)) = event.press_args() {
-            println!("Pressed key '{:?}'", key);
+            info!("Pressed key '{:?}'", key);
             if key == Key::Escape {
-                println!("ui on");
                 return StateTransition::Push(Box::new(PauseMenu::new(resources)));
             } else if key == Key::C {
                 self.capture = !self.capture;
                 resources.window.set_capture_cursor(self.capture);
-                println!("capture {}", if self.capture { "on" } else { "off" });
+                info!("capture {}", if self.capture { "on" } else { "off" });
             }
         }
 
@@ -242,6 +264,12 @@ struct PauseMenu {
     // FIXME: Spelling out gfx_device_gl (and direct dep) shouldn't be necessary
     image_map: conrod::image::Map<piston_window::Texture<gfx_device_gl::Resources>>,
     text_texture_cache: conrod::backend::piston_window::GlyphCache,
+}
+
+impl Debug for PauseMenu {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        write!(f, "PauseMenu")
+    }
 }
 
 impl PauseMenu {

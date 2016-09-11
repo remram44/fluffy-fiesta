@@ -7,17 +7,19 @@ authors = ["Remi Rampin <remirampin@gmail.com>"]
 name = "client"
 
 [dependencies]
+env_logger = "0.3"
+log = "0.3"
 vecmath = "0.2.*"
 
 # Abstract graphics
-conrod = "0.43.*"
-piston = "0.25.*"
-piston2d-graphics = "0.17.*"
+conrod = "0.43"
+piston = "0.25"
+piston2d-graphics = "0.17"
 piston_window = "0.52"
 
 # Concrete graphics
 gfx_device_gl = "*"
-pistoncore-sdl2_window = "0.34.*"
+pistoncore-sdl2_window = "0.34"
 sdl2 = "*"
 
 [features]

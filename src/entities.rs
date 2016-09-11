@@ -11,7 +11,7 @@ impl Spawn {
 }
 
 impl EntityLogic for Spawn {
-    fn update(&mut self, entity: &mut Entity, game: &mut Game) -> bool {
+    fn update(&mut self, entity: &mut Entity, dt: f64, game: &mut Game) -> bool {
         // Drain all spawnables to avoid multiple borrows from Game
         let spawnables:Vec<Box<Spawnable>> = game.map.spawnables.drain(..).collect();
         // Loop on spawnables, spawning at most one entity

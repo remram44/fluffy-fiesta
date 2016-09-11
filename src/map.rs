@@ -19,7 +19,7 @@ use vecmath::*;
 
 /// This represents the logic for a type of entity.
 pub trait EntityLogic {
-    fn update(&mut self, entity: &mut Entity, &mut Game) -> bool;
+    fn update(&mut self, entity: &mut Entity, dt: f64, &mut Game) -> bool;
 }
 
 /// This is an entity in the world, with a position and pointer to the logic.

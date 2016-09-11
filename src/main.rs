@@ -38,11 +38,15 @@ enum StateTransition {
 /// itself; starting the game finishes the character selection, but the main
 /// menu remains accessible.
 trait GameState {
-    fn handle_event(&mut self, event: &piston::input::Event<piston::input::Input>, resources: &mut Resources) {}
+    fn handle_event(&mut self, event: &piston::input::Event<piston::input::Input>,
+                    resources: &mut Resources) -> StateTransition
+    {
+        StateTransition::Continue
+    }
     fn update(&mut self, dt: f64) -> StateTransition;
     fn draw(&mut self, c: Context, g: &mut G2d);
-    fn pause(&mut self) {}
-    fn resume(&mut self) {}
+    fn pause(&mut self, resources: &mut Resources) {}
+    fn resume(&mut self, resources: &mut Resources) {}
 }
 
 struct Resources {
@@ -110,12 +114,19 @@ impl App {
     }
 
     fn handle_state(resources: &mut Resources, state: &mut Box<GameState>) -> StateTransition {
-        state.resume();
+        state.resume(resources);
 
         let mut events = resources.window.events();
         while let Some(event) = events.next(&mut resources.window) {
             // Handle generic event
-            state.handle_event(&event, resources);
+            let transition = state.handle_event(&event, resources);
+            match transition {
+                StateTransition::Continue => {},
+                t => {
+                    state.pause(resources);
+                    return t;
+                }
+            }
 
             // Call update method
             if let Some(u) = event.update_args() {
@@ -123,7 +134,7 @@ impl App {
                 match transition {
                     StateTransition::Continue => {},
                     t => {
-                        state.pause();
+                        state.pause(resources);
                         return t;
                     }
                 }
@@ -132,7 +143,7 @@ impl App {
             // Call draw method
             resources.window.draw_2d(&event, |c, g| state.draw(c, g));
         }
-        state.pause();
+        state.pause(resources);
         StateTransition::End
     }
 }
@@ -150,7 +161,6 @@ struct Game {
     widget_ids: GameWidgetIds,
     capture: bool,
     ui_on: bool,
-    quit: bool,
     // FIXME: Spelling out gfx_device_gl (and direct dep) shouldn't be necessary
     image_map: conrod::image::Map<piston_window::Texture<gfx_device_gl::Resources>>,
     text_texture_cache: conrod::backend::piston_window::GlyphCache,
@@ -184,7 +194,6 @@ impl Game {
             widget_ids: ids,
             capture: false,
             ui_on: false,
-            quit: false,
             image_map: image_map,
             text_texture_cache: text_texture_cache,
         }
@@ -192,7 +201,9 @@ impl Game {
 }
 
 impl GameState for Game {
-    fn handle_event(&mut self, event: &piston::input::Event<piston::input::Input>, resources: &mut Resources) {
+    fn handle_event(&mut self, event: &piston::input::Event<piston::input::Input>,
+                    resources: &mut Resources) -> StateTransition
+    {
         // Convert the piston event to a conrod event.
         if let Some(ce) = conrod::backend::piston_window::convert_event(event.clone(), &mut resources.window) {
             self.ui.handle_event(ce);
@@ -223,7 +234,7 @@ impl GameState for Game {
                 .set(self.widget_ids.quit, ui)
                 .was_clicked()
             {
-                self.quit = true;
+                return StateTransition::End;
             }
         }
 
@@ -246,17 +257,15 @@ impl GameState for Game {
                 println!("capture {}", if self.capture { "on" } else { "off" });
             }
         }
+
+        StateTransition::Continue
     }
 
     fn update(&mut self, dt: f64) -> StateTransition {
         // Rotate 2 radians per second.
         self.rotation += 2.0 * dt;
 
-        if self.quit {
-            StateTransition::End
-        } else {
-            StateTransition::Continue
-        }
+        StateTransition::Continue
     }
 
     fn draw(&mut self, c: Context, g: &mut G2d) {

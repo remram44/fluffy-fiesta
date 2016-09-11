@@ -14,11 +14,12 @@
 use std::collections::HashMap;
 use std::path::Path;
 
+use game::Game;
 use vecmath::*;
 
 /// This represents the logic for a type of entity.
 pub trait EntityLogic {
-    fn update(&mut self, &mut Entity) -> bool;
+    fn update(&mut self, entity: &mut Entity, &mut Game) -> bool;
 }
 
 /// This is an entity in the world, with a position and pointer to the logic.
@@ -46,20 +47,26 @@ struct TileType {
 /// A tile in the map, just references a TileType.
 pub type Tile = u16;
 
+pub trait Spawnable {
+    fn spawn(&mut self, game: &mut Game) -> (bool, Option<Entity>);
+}
+
 /// The map, representing the status of the world at a given instant.
 pub struct Map {
     /// Width in number of tiles.
-    width: usize,
+    pub width: usize,
     /// Height in number of tiles.
-    height: usize,
+    pub height: usize,
     /// The tile types, referenced by the tile array.
     tiletypes: Vec<TileType>,
     /// The tiles, ordered Y first (bottom to top) then X (left to right).
-    tiles: Vec<Tile>,
+    pub tiles: Vec<Tile>,
     /// The entities.
-    entities: Vec<Box<Entity>>,
+    pub entities: Vec<Entity>,
     /// The entities associated with tiles.
     tile_entities: HashMap<(usize, usize), Entity>,
+    /// The things that can be spawned.
+    pub spawnables: Vec<Box<Spawnable>>,
 }
 
 struct EntityDefinition {
@@ -68,8 +75,18 @@ struct EntityDefinition {
 }
 
 impl EntityDefinition {
-    fn create(&self, seed: u32) -> Box<Entity> {
-        unimplemented!()
+    fn create(&self, seed: u32) -> Option<Entity> {
+        let logic = match self.type_id.as_ref() {
+            "f.spawn" => Box::new(::entities::Spawn::new()),
+            _ => {
+                warn!("Can't create unknown entity type {}", self.type_id);
+                return None
+            },
+        };
+        Some(Entity {
+            pos: self.position,
+            logic: logic,
+        })
     }
 }
 
@@ -92,7 +109,7 @@ impl MapFactory {
     }
 
     /// Create the hardcoded example map.
-    fn example() -> MapFactory {
+    pub fn example() -> MapFactory {
         // Initialize with background color
         let mut tiles = vec![1; 100 * 100];
         // Different background for top part
@@ -165,7 +182,7 @@ impl MapFactory {
     }
 
     /// Create a live `Map` from this map definition.
-    fn create(&self, seed: u32) -> Map {
+    pub fn create(&self, seed: u32) -> Map {
         let mut tile_entities = HashMap::new();
 
         let tiles = self.tiles.clone();
@@ -186,8 +203,9 @@ impl MapFactory {
             height: self.height,
             tiletypes: self.tiletypes.clone(),
             tiles: tiles,
-            entities: self.entities.iter().map(|e| e.create(seed)).collect(),
+            entities: self.entities.iter().filter_map(|e| e.create(seed)).collect(),
             tile_entities: tile_entities,
+            spawnables: Vec::new(),
         }
     }
 }

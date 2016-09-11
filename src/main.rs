@@ -16,6 +16,7 @@ use piston::event_loop::*;
 use piston::input::*;
 use sdl2_window::Sdl2Window;
 
+mod entities;
 mod game;
 mod map;
 mod vecmath;

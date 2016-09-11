@@ -6,11 +6,13 @@ use piston_window::{Context, G2d};
 use std::fmt::{self, Debug, Formatter};
 
 use ::{GameState, Resources, StateTransition};
+use ::map;
 
 mod pausemenu;
 
 pub struct Game {
     rotation: f64,  // Rotation for the square.
+    pub map: map::Map,
     capture: bool,
 }
 
@@ -18,6 +20,7 @@ impl Game {
     pub fn new(resources: &mut Resources) -> Game {
         Game {
             rotation: 0.0,
+            map: map::MapFactory::example().create(42),
             capture: false,
         }
     }

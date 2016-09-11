@@ -122,13 +122,17 @@ impl App {
                 let transition = state.update(u.dt);
                 match transition {
                     StateTransition::Continue => {},
-                    t => return t,
+                    t => {
+                        state.pause();
+                        return t;
+                    }
                 }
             }
 
             // Call draw method
             resources.window.draw_2d(&event, |c, g| state.draw(c, g));
         }
+        state.pause();
         StateTransition::End
     }
 }

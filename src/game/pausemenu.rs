@@ -1,5 +1,4 @@
 use conrod::{self, Labelable, Positionable, Sizeable, Widget};
-use gfx_device_gl;
 use piston;
 use piston_window::{self, Context, G2d};
 
@@ -13,8 +12,7 @@ widget_ids!(struct GameWidgetIds { canvas, resume, quit });
 pub struct PauseMenu {
     ui: conrod::Ui,
     widget_ids: GameWidgetIds,
-    // FIXME: Spelling out gfx_device_gl (and direct dep) shouldn't be necessary
-    image_map: conrod::image::Map<piston_window::Texture<gfx_device_gl::Resources>>,
+    image_map: conrod::image::Map<piston_window::G2dTexture<'static>>,
     text_texture_cache: conrod::backend::piston_window::GlyphCache,
 }
 

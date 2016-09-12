@@ -1,6 +1,5 @@
 #[macro_use] extern crate conrod;
 extern crate env_logger;
-extern crate gfx_device_gl;
 extern crate graphics;
 #[macro_use] extern crate log;
 extern crate piston;

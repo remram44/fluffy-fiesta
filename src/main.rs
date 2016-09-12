@@ -5,6 +5,7 @@ extern crate graphics;
 #[macro_use] extern crate log;
 extern crate piston;
 extern crate piston_window;
+extern crate rodio;
 extern crate sdl2_window;
 extern crate vecmath as vecmath_lib;
 

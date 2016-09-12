@@ -11,6 +11,8 @@ env_logger = "0.3"
 log = "0.3"
 vecmath = "0.2.*"
 
+rodio = "0.4"
+
 # Abstract graphics
 conrod = "0.43"
 piston = "0.25"

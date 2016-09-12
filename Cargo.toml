@@ -2,6 +2,11 @@
 name = "fluffy-fiesta"
 version = "0.1.0"
 authors = ["Remi Rampin <remirampin@gmail.com>"]
+license = "BSD-3-Clause"
+repository = "https://github.com/remram44/fluffy-fiesta"
+description = "Platformer game with Piston"
+readme = "README.md"
+keywords = ["game", "platformer"]
 
 [[bin]]
 name = "client"

@@ -1,3 +1,5 @@
+use std::mem::swap;
+
 use map::{Entity, EntityLogic, Spawnable};
 use game::Game;
 
@@ -12,11 +14,12 @@ impl Spawn {
 
 impl EntityLogic for Spawn {
     fn update(&mut self, entity: &mut Entity, dt: f64, game: &mut Game) -> bool {
-        // Drain all spawnables to avoid multiple borrows from Game
-        let spawnables:Vec<Box<Spawnable>> = game.map.spawnables.drain(..).collect();
+        // Move out all spawnables to avoid multiple borrows from Game
+        let mut spawnables = Vec::new();
+        swap(&mut spawnables, &mut game.map.spawnables);
         // Loop on spawnables, spawning at most one entity
         let mut spawned_one = false;
-        let spawnables = spawnables.into_iter().filter_map(|mut spawnable| {
+        let mut spawnables = spawnables.into_iter().filter_map(|mut spawnable| {
             if spawned_one {
                 Some(spawnable)
             } else {
@@ -32,7 +35,8 @@ impl EntityLogic for Spawn {
                 }
             }
         }).collect::<Vec<_>>();
-        game.map.spawnables.extend(spawnables.into_iter());
+        // Put back the remaining spawnables
+        swap(&mut spawnables, &mut game.map.spawnables);
 
         true
     }

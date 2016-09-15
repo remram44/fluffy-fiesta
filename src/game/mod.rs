@@ -5,19 +5,41 @@ use piston_window::{Context, G2d};
 
 use std::fmt::{self, Debug, Formatter};
 
-use ::{GameState, Resources, StateTransition};
-use ::map;
+use {GameState, Resources, StateTransition};
+use map;
+use utils::one_rest_split_iter;
+use vecmath::*;
 
 mod pausemenu;
 
 pub struct Game {
-    pub map: map::Map,
+    pub world: map::World,
 }
 
 impl Game {
     pub fn new(resources: &mut Resources) -> Game {
+        use map::{Entity, EntityLogic, Spawnable, WorldView};
+
+        struct TestEntity;
+
+        impl EntityLogic for TestEntity {
+            fn update(&mut self, entity: &mut Entity, dt: f64, world: &mut WorldView) -> bool {
+                true
+            }
+        }
+
+        struct TestSpawn;
+
+        impl Spawnable for TestSpawn {
+            fn spawn(&mut self, pos: &Vector2) -> (bool, Option<Entity>) {
+                (false, Some(Entity::new(pos.clone(), TestEntity)))
+            }
+        }
+
+        let mut world = map::MapFactory::example().create(42);
+        world.spawnables.push(Box::new(TestSpawn));
         Game {
-            map: map::MapFactory::example().create(42),
+            world: world,
         }
     }
 }
@@ -47,7 +69,15 @@ impl GameState for Game {
     }
 
     fn update(&mut self, dt: f64) -> StateTransition {
-        // Drain all entities to avoid multiple
+        let map = &mut self.world.map;
+        let spawnables = &mut self.world.spawnables;
+        one_rest_split_iter(&mut self.world.entities, |entity, other_entities| {
+            let world_view = map::WorldView {
+                map: map,
+                entities: other_entities,
+                spawnables: spawnables,
+            };
+        });
 
         StateTransition::Continue
     }

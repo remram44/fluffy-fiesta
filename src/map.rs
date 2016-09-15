@@ -19,13 +19,22 @@ use vecmath::*;
 
 /// This represents the logic for a type of entity.
 pub trait EntityLogic {
-    fn update(&mut self, entity: &mut Entity, dt: f64, &mut Game) -> bool;
+    fn update(&mut self, entity: &mut Entity, dt: f64, world: &mut WorldView) -> bool;
 }
 
 /// This is an entity in the world, with a position and pointer to the logic.
 pub struct Entity {
     pub pos: Vector2,
     logic: Box<EntityLogic>,
+}
+
+impl Entity {
+    pub fn new<T: EntityLogic + 'static>(pos: Vector2, logic: T) -> Entity {
+        Entity {
+            pos: pos,
+            logic: Box::new(logic),
+        }
+    }
 }
 
 type TileEntityFactory = &'static Fn(Tile, &TileType, (usize, usize)) -> Option<Entity>;
@@ -48,25 +57,7 @@ struct TileType {
 pub type Tile = u16;
 
 pub trait Spawnable {
-    fn spawn(&mut self, game: &mut Game) -> (bool, Option<Entity>);
-}
-
-/// The map, representing the status of the world at a given instant.
-pub struct Map {
-    /// Width in number of tiles.
-    pub width: usize,
-    /// Height in number of tiles.
-    pub height: usize,
-    /// The tile types, referenced by the tile array.
-    tiletypes: Vec<TileType>,
-    /// The tiles, ordered Y first (bottom to top) then X (left to right).
-    pub tiles: Vec<Tile>,
-    /// The entities.
-    pub entities: Vec<Entity>,
-    /// The entities associated with tiles.
-    tile_entities: HashMap<(usize, usize), Entity>,
-    /// The things that can be spawned.
-    pub spawnables: Vec<Box<Spawnable>>,
+    fn spawn(&mut self, pos: &Vector2) -> (bool, Option<Entity>);
 }
 
 struct EntityDefinition {
@@ -88,6 +79,35 @@ impl EntityDefinition {
             logic: logic,
         })
     }
+}
+
+/// The map, representing the status of the world at a given instant.
+pub struct Map {
+    /// Width in number of tiles.
+    pub width: usize,
+    /// Height in number of tiles.
+    pub height: usize,
+    /// The tile types, referenced by the tile array.
+    tiletypes: Vec<TileType>,
+    /// The tiles, ordered Y first (bottom to top) then X (left to right).
+    pub tiles: Vec<Tile>,
+}
+
+pub struct World {
+    /// The map, grid of terrain tiles.
+    pub map: Map,
+    /// The entities.
+    pub entities: Vec<Entity>,
+    /// The entities associated with tiles.
+    tile_entities: HashMap<(usize, usize), Entity>,
+    /// The things that can be spawned.
+    pub spawnables: Vec<Box<Spawnable>>,
+}
+
+pub struct WorldView<'a> {
+    pub map: &'a mut Map,
+    pub entities: &'a mut Vec<Entity>,
+    pub spawnables: &'a mut Vec<Box<Spawnable>>,
 }
 
 /// Initial map definition, loaded from disk.
@@ -182,7 +202,7 @@ impl MapFactory {
     }
 
     /// Create a live `Map` from this map definition.
-    pub fn create(&self, seed: u32) -> Map {
+    pub fn create(&self, seed: u32) -> World {
         let mut tile_entities = HashMap::new();
 
         let tiles = self.tiles.clone();
@@ -198,11 +218,13 @@ impl MapFactory {
             }
         }
 
-        Map {
-            width: self.width,
-            height: self.height,
-            tiletypes: self.tiletypes.clone(),
-            tiles: tiles,
+        World {
+            map: Map {
+                width: self.width,
+                height: self.height,
+                tiletypes: self.tiletypes.clone(),
+                tiles: tiles,
+            },
             entities: self.entities.iter().filter_map(|e| e.create(seed)).collect(),
             tile_entities: tile_entities,
             spawnables: Vec::new(),

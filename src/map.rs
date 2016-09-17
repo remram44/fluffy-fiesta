@@ -14,24 +14,30 @@
 use std::collections::HashMap;
 use std::path::Path;
 
-use game::Game;
 use vecmath::*;
 
 /// This represents the logic for a type of entity.
 pub trait EntityLogic {
-    fn update(&mut self, entity: &mut Entity, dt: f64, world: &mut WorldView) -> bool;
+    fn update(&mut self, entity: &mut EntityPhysics, dt: f64, world: &mut WorldView) -> bool;
+}
+
+/// This represents the physical attributes of an entity.
+pub struct EntityPhysics {
+    pub pos: Vector2,
 }
 
 /// This is an entity in the world, with a position and pointer to the logic.
 pub struct Entity {
-    pub pos: Vector2,
-    logic: Box<EntityLogic>,
+    pub physics: EntityPhysics,
+    pub logic: Box<EntityLogic>,
 }
 
 impl Entity {
     pub fn new<T: EntityLogic + 'static>(pos: Vector2, logic: T) -> Entity {
         Entity {
-            pos: pos,
+            physics: EntityPhysics {
+                pos: pos,
+            },
             logic: Box::new(logic),
         }
     }
@@ -75,7 +81,9 @@ impl EntityDefinition {
             },
         };
         Some(Entity {
-            pos: self.position,
+            physics: EntityPhysics {
+                pos: self.position,
+            },
             logic: logic,
         })
     }

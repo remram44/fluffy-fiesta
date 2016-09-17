@@ -1,8 +1,6 @@
 use std::mem::swap;
-use std::slice::Iter as IterSlice;
 
-use map::{Entity, EntityLogic, Map, Spawnable, WorldView};
-use game::Game;
+use map::{EntityLogic, EntityPhysics, WorldView};
 
 pub struct Spawn {
 }
@@ -14,7 +12,7 @@ impl Spawn {
 }
 
 impl EntityLogic for Spawn {
-    fn update(&mut self, entity: &mut Entity, dt: f64, world: &mut WorldView) -> bool {
+    fn update(&mut self, entity: &mut EntityPhysics, dt: f64, world: &mut WorldView) -> bool {
         // Move out all spawnables to avoid multiple borrows from Game
         let mut spawnables = Vec::new();
         swap(&mut spawnables, &mut world.spawnables);
@@ -25,8 +23,8 @@ impl EntityLogic for Spawn {
                 Some(spawnable)
             } else {
                 let (keep, spawned) = spawnable.spawn(&entity.pos);
-                if let Some(entity) = spawned {
-                    world.entities.push(entity);
+                if let Some(new_entity) = spawned {
+                    world.entities.push(new_entity);
                     spawned_one = true;
                 }
                 if keep {

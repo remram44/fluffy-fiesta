@@ -122,9 +122,9 @@ pub struct WorldView<'a> {
 ///
 /// This can be turned into a live Map using `create()`.
 pub struct MapFactory {
-    width: usize,
-    height: usize,
-    nb_players: usize,
+    pub width: usize,
+    pub height: usize,
+    pub nb_players: usize,
     tiletypes: Vec<TileType>,
     tiles: Vec<Tile>,
     entities: Vec<EntityDefinition>,

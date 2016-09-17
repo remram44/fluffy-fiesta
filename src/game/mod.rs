@@ -5,23 +5,70 @@ use piston_window::{Context, G2d};
 
 use std::fmt::{self, Debug, Formatter};
 
+use map::{Entity, EntityLogic, EntityPhysics, MapFactory, Spawnable, World, WorldView};
 use {GameState, Resources, StateTransition};
-use map;
 use utils::one_rest_split_iter;
 use vecmath::*;
 
 mod pausemenu;
 
+struct Character {
+    player: usize,
+}
+
+impl Character {
+    fn new(player: usize) -> Character {
+        Character {
+            player: player,
+        }
+    }
+}
+
+impl EntityLogic for Character {
+    fn update(&mut self, entity: &mut EntityPhysics, dt: f64, world: &mut WorldView) -> bool {
+        true
+    }
+}
+
+struct SimpleSpawn {
+    entity_logic: Option<Box<EntityLogic>>,
+}
+
+impl SimpleSpawn {
+    fn new(entity_logic: Box<EntityLogic>) -> SimpleSpawn {
+        SimpleSpawn {
+            entity_logic: Some(entity_logic),
+        }
+    }
+}
+
+impl Spawnable for SimpleSpawn {
+    fn spawn(&mut self, pos: &Vector2) -> (bool, Option<Entity>) {
+        (false, self.entity_logic.take().map(|entity_logic| {
+            info!("Spawning an entity");
+            Some(Entity {
+                physics: EntityPhysics {
+                    pos: pos.clone(),
+                },
+                logic: entity_logic,
+            })
+        }).unwrap_or(None))
+    }
+}
+
 pub struct Game {
-    pub world: map::World,
+    pub world: World,
 }
 
 impl Game {
-    pub fn new(resources: &mut Resources) -> Game {
-        use map::{Entity, EntityLogic, EntityPhysics, Spawnable, WorldView};
+    pub fn new(map_factory: MapFactory, resources: &mut Resources) -> Game {
+        info!("Creating game...");
 
-        info!("Creating game, adding TestSpawn");
+        if map_factory.nb_players < 1 {
+            panic!("Can't play on map meant for 0 players");
+        }
 
+        /*
         struct TestEntity;
 
         impl EntityLogic for TestEntity {
@@ -38,9 +85,15 @@ impl Game {
                 (false, Some(Entity::new(pos.clone(), TestEntity)))
             }
         }
+        */
 
-        let mut world = map::MapFactory::example().create(42);
-        world.spawnables.push(Box::new(TestSpawn));
+        info!("Creating map");
+        let mut world = map_factory.create(42);
+
+        info!("Creating {} characters", 1);
+        let character = Character::new(0);
+        world.spawnables.push(Box::new(SimpleSpawn::new(Box::new(character))));
+
         Game {
             world: world,
         }
@@ -74,7 +127,7 @@ impl GameState for Game {
         let map = &mut self.world.map;
         let spawnables = &mut self.world.spawnables;
         one_rest_split_iter(&mut self.world.entities, |mut entity, other_entities| {
-            let mut world_view = map::WorldView {
+            let mut world_view = WorldView {
                 map: map,
                 entities: other_entities,
                 spawnables: spawnables,

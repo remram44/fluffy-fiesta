@@ -5,23 +5,45 @@ use piston_window::{Context, G2d};
 
 use std::fmt::{self, Debug, Formatter};
 
-use ::{GameState, Resources, StateTransition};
-use ::map;
+use {GameState, Resources, StateTransition};
+use map;
+use utils::one_rest_split_iter;
+use vecmath::*;
 
 mod pausemenu;
 
 pub struct Game {
-    rotation: f64,  // Rotation for the square.
-    pub map: map::Map,
-    capture: bool,
+    pub world: map::World,
 }
 
 impl Game {
     pub fn new(resources: &mut Resources) -> Game {
+        use map::{Entity, EntityLogic, EntityPhysics, Spawnable, WorldView};
+
+        info!("Creating game, adding TestSpawn");
+
+        struct TestEntity;
+
+        impl EntityLogic for TestEntity {
+            fn update(&mut self, entity: &mut EntityPhysics, dt: f64, world: &mut WorldView) -> bool {
+                info!("TestEntity updating");
+                true
+            }
+        }
+
+        struct TestSpawn;
+
+        impl Spawnable for TestSpawn {
+            fn spawn(&mut self, pos: &Vector2) -> (bool, Option<Entity>) {
+                info!("TestSpawn spawning TestEntity");
+                (false, Some(Entity::new(pos.clone(), TestEntity)))
+            }
+        }
+
+        let mut world = map::MapFactory::example().create(42);
+        world.spawnables.push(Box::new(TestSpawn));
         Game {
-            rotation: 0.0,
-            map: map::MapFactory::example().create(42),
-            capture: false,
+            world: world,
         }
     }
 }
@@ -44,10 +66,6 @@ impl GameState for Game {
             info!("Pressed key '{:?}'", key);
             if key == Key::Escape {
                 return StateTransition::Push(Box::new(pausemenu::PauseMenu::new(resources)));
-            } else if key == Key::C {
-                self.capture = !self.capture;
-                resources.window.set_capture_cursor(self.capture);
-                info!("capture {}", if self.capture { "on" } else { "off" });
             }
         }
 
@@ -55,8 +73,16 @@ impl GameState for Game {
     }
 
     fn update(&mut self, dt: f64) -> StateTransition {
-        // Rotate 2 radians per second.
-        self.rotation += 2.0 * dt;
+        let map = &mut self.world.map;
+        let spawnables = &mut self.world.spawnables;
+        one_rest_split_iter(&mut self.world.entities, |mut entity, other_entities| {
+            let mut world_view = map::WorldView {
+                map: map,
+                entities: other_entities,
+                spawnables: spawnables,
+            };
+            entity.logic.update(&mut entity.physics, dt, &mut world_view);
+        });
 
         StateTransition::Continue
     }
@@ -68,29 +94,22 @@ impl GameState for Game {
         const RED:   [f32; 4] = [1.0, 0.0, 0.0, 1.0];
 
         let square = rectangle::square(0.0, 0.0, 150.0);
-        let rotation = self.rotation;
         let (x, y) = (100.0, 100.0);
 
         // Clear the screen.
         clear(GREEN, g);
 
-        let transform = c.transform.trans(x, y)
-                                   .rot_rad(rotation)
-                                   .trans(-75.0, -75.0);
+        // Draw a box around the middle of the screen.
+        rectangle(RED, square, c.transform, g);
 
-        // Draw a box rotating around the middle of the screen.
-        rectangle(RED, square, transform, g);
+        // TODO: graphics
     }
 
     fn pause(&mut self, resources: &mut Resources) {
-        if self.capture {
-            resources.window.set_capture_cursor(false);
-        }
+        resources.window.set_capture_cursor(false);
     }
 
     fn resume(&mut self, resources: &mut Resources) {
-        if self.capture {
-            resources.window.set_capture_cursor(self.capture);
-        }
+        resources.window.set_capture_cursor(true);
     }
 }

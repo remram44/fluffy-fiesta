@@ -1,5 +1,6 @@
-use map::{Entity, EntityLogic, Spawnable};
-use game::Game;
+use std::mem::swap;
+
+use map::{EntityLogic, EntityPhysics, WorldView};
 
 pub struct Spawn {
 }
@@ -11,18 +12,19 @@ impl Spawn {
 }
 
 impl EntityLogic for Spawn {
-    fn update(&mut self, entity: &mut Entity, dt: f64, game: &mut Game) -> bool {
-        // Drain all spawnables to avoid multiple borrows from Game
-        let spawnables:Vec<Box<Spawnable>> = game.map.spawnables.drain(..).collect();
+    fn update(&mut self, entity: &mut EntityPhysics, dt: f64, world: &mut WorldView) -> bool {
+        // Move out all spawnables to avoid multiple borrows from Game
+        let mut spawnables = Vec::new();
+        swap(&mut spawnables, &mut world.spawnables);
         // Loop on spawnables, spawning at most one entity
         let mut spawned_one = false;
-        let spawnables = spawnables.into_iter().filter_map(|mut spawnable| {
+        let mut spawnables = spawnables.into_iter().filter_map(|mut spawnable| {
             if spawned_one {
                 Some(spawnable)
             } else {
-                let (keep, spawned) = spawnable.spawn(game);
-                if let Some(entity) = spawned {
-                    game.map.entities.push(entity);
+                let (keep, spawned) = spawnable.spawn(&entity.pos);
+                if let Some(new_entity) = spawned {
+                    world.entities.push(new_entity);
                     spawned_one = true;
                 }
                 if keep {
@@ -32,7 +34,8 @@ impl EntityLogic for Spawn {
                 }
             }
         }).collect::<Vec<_>>();
-        game.map.spawnables.extend(spawnables.into_iter());
+        // Put back the remaining spawnables
+        swap(&mut spawnables, &mut world.spawnables);
 
         true
     }

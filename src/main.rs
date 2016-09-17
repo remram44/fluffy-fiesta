@@ -18,6 +18,7 @@ use sdl2_window::Sdl2Window;
 mod entities;
 mod game;
 mod map;
+mod utils;
 mod vecmath;
 
 /// A transition requested by a game state.

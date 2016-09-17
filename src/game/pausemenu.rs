@@ -90,7 +90,7 @@ impl GameState for PauseMenu {
         }
     }
 
-    fn update(&mut self, df: f64) -> StateTransition {
+    fn update(&mut self, dt: f64) -> StateTransition {
         StateTransition::Continue
     }
 

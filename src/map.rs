@@ -12,12 +12,13 @@
 //! `has_entity` set to `true`, and an entity exists for each tile of that type.
 
 use std::collections::HashMap;
+use std::fmt;
 use std::path::Path;
 
 use vecmath::*;
 
 /// This represents the logic for a type of entity.
-pub trait EntityLogic {
+pub trait EntityLogic: fmt::Debug {
     fn update(&mut self, entity: &mut EntityPhysics, dt: f64, world: &mut WorldView) -> bool;
 }
 
@@ -40,6 +41,12 @@ impl Entity {
             },
             logic: Box::new(logic),
         }
+    }
+}
+
+impl fmt::Debug for Entity {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Entity {:?} @ {:?}", self.logic, self.physics.pos)
     }
 }
 

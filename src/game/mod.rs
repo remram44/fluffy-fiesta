@@ -12,6 +12,7 @@ use vecmath::*;
 
 mod pausemenu;
 
+#[derive(Debug)]
 struct Character {
     player: usize,
 }
@@ -38,6 +39,16 @@ impl SimpleSpawn {
     fn new(entity_logic: Box<EntityLogic>) -> SimpleSpawn {
         SimpleSpawn {
             entity_logic: Some(entity_logic),
+        }
+    }
+}
+
+impl fmt::Debug for SimpleSpawn {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if let Some(entity_logic) = self.entity_logic.as_ref() {
+            write!(f, "SimpleSpawn({:?})", entity_logic)
+        } else {
+            write!(f, "SimpleSpawn(empty)")
         }
     }
 }

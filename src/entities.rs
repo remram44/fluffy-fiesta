@@ -2,6 +2,7 @@ use std::mem::swap;
 
 use map::{EntityLogic, EntityPhysics, WorldView};
 
+#[derive(Debug)]
 pub struct Spawn {
 }
 

@@ -94,9 +94,11 @@ impl Game {
         let character = Character::new(0);
         world.spawnables.push(Box::new(SimpleSpawn::new(Box::new(character))));
 
-        Game {
+        let mut game = Game {
             world: world,
-        }
+        };
+        game.update(0.0, resources);
+        game
     }
 }
 

@@ -5,10 +5,10 @@ use piston_window::{Context, G2d};
 
 use std::fmt::{self, Debug, Formatter};
 
-use map::{Entity, EntityLogic, EntityPhysics, MapFactory, Spawnable, World, WorldView};
 use {GameState, Resources, StateTransition};
 use utils::one_rest_split_iter;
 use vecmath::*;
+use world::{Entity, EntityLogic, EntityPhysics, MapFactory, Spawnable, World, WorldView};
 
 mod pausemenu;
 

@@ -18,9 +18,9 @@ use sdl2_window::Sdl2Window;
 mod entities;
 mod game;
 mod input;
-mod map;
 mod utils;
 mod vecmath;
+mod world;
 
 use input::InputManager;
 
@@ -96,7 +96,7 @@ impl App {
                 input_manager: InputManager::new(),
             },
         };
-        let game = game::Game::new(map::MapFactory::example(), &mut app.resources);
+        let game = game::Game::new(world::MapFactory::example(), &mut app.resources);
         app.states.push(Box::new(game));
         info!("Game state created");
         app

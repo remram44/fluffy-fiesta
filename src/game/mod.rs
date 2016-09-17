@@ -10,7 +10,6 @@ use map;
 use utils::one_rest_split_iter;
 use vecmath::*;
 
-pub mod input;
 mod pausemenu;
 
 pub struct Game {

@@ -17,11 +17,12 @@ use sdl2_window::Sdl2Window;
 
 mod entities;
 mod game;
+mod input;
 mod map;
 mod utils;
 mod vecmath;
 
-use game::input::InputManager;
+use input::InputManager;
 
 /// A transition requested by a game state.
 pub enum StateTransition {

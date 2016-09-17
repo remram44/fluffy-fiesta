@@ -21,6 +21,8 @@ mod map;
 mod utils;
 mod vecmath;
 
+use game::input::InputManager;
+
 /// A transition requested by a game state.
 pub enum StateTransition {
     /// Stay on this state.
@@ -48,7 +50,7 @@ pub trait GameState : Debug {
     {
         StateTransition::Continue
     }
-    fn update(&mut self, dt: f64) -> StateTransition;
+    fn update(&mut self, dt: f64, resources: &mut Resources) -> StateTransition;
     fn draw(&mut self, c: Context, g: &mut G2d);
     fn pause(&mut self, resources: &mut Resources) {}
     fn resume(&mut self, resources: &mut Resources) {}
@@ -58,6 +60,7 @@ pub struct Resources {
     window: PistonWindow<Sdl2Window>,
     width: u32,
     height: u32,
+    input_manager: InputManager,
 }
 
 struct App {
@@ -87,8 +90,9 @@ impl App {
             states: Vec::new(),
             resources: Resources {
                 window: window,
-            width: width,
-            height: height,
+                width: width,
+                height: height,
+                input_manager: InputManager::new(),
             },
         };
         let game = game::Game::new(&mut app.resources);
@@ -146,7 +150,7 @@ impl App {
 
             // Call update method
             if let Some(u) = event.update_args() {
-                let transition = state.update(u.dt);
+                let transition = state.update(u.dt, resources);
                 match transition {
                     StateTransition::Continue => {},
                     t => {

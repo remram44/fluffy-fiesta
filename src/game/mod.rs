@@ -10,6 +10,7 @@ use map;
 use utils::one_rest_split_iter;
 use vecmath::*;
 
+pub mod input;
 mod pausemenu;
 
 pub struct Game {
@@ -26,7 +27,6 @@ impl Game {
 
         impl EntityLogic for TestEntity {
             fn update(&mut self, entity: &mut EntityPhysics, dt: f64, world: &mut WorldView) -> bool {
-                info!("TestEntity updating");
                 true
             }
         }
@@ -58,21 +58,20 @@ impl GameState for Game {
     fn handle_event(&mut self, event: &piston::input::Event<piston::input::Input>,
                     resources: &mut Resources) -> StateTransition
     {
-        if let Some(Button::Mouse(button)) = event.press_args() {
-            info!("Pressed mouse button '{:?}'", button);
-        }
-
         if let Some(Button::Keyboard(key)) = event.press_args() {
-            info!("Pressed key '{:?}'", key);
             if key == Key::Escape {
                 return StateTransition::Push(Box::new(pausemenu::PauseMenu::new(resources)));
             }
         }
 
+        resources.input_manager.handle_event(event);
+
         StateTransition::Continue
     }
 
-    fn update(&mut self, dt: f64) -> StateTransition {
+    fn update(&mut self, dt: f64, resources: &mut Resources) -> StateTransition {
+        resources.input_manager.update(dt);
+
         let map = &mut self.world.map;
         let spawnables = &mut self.world.spawnables;
         one_rest_split_iter(&mut self.world.entities, |mut entity, other_entities| {

@@ -11,16 +11,17 @@
 //! them. These are represented by tile entities, which means the tile types has
 //! `has_entity` set to `true`, and an entity exists for each tile of that type.
 
-use std::cmp::{max, min};
 use std::collections::HashMap;
 use std::fmt;
 use std::path::Path;
 
+use input::InputManager;
 use vecmath::*;
 
 /// This represents the logic for a type of entity.
 pub trait EntityLogic: fmt::Debug {
-    fn update(&mut self, entity: &mut EntityPhysics, dt: f64, world: &mut WorldView) -> bool;
+    fn update(&mut self, entity: &mut EntityPhysics, dt: f64,
+              world: &mut WorldView, input: &InputManager) -> bool;
 }
 
 /// This represents the physical attributes of an entity.
@@ -34,17 +35,6 @@ pub struct Entity {
     pub logic: Box<EntityLogic>,
 }
 
-impl Entity {
-    pub fn new<T: EntityLogic + 'static>(pos: Vector2, logic: T) -> Entity {
-        Entity {
-            physics: EntityPhysics {
-                pos: pos,
-            },
-            logic: Box::new(logic),
-        }
-    }
-}
-
 impl fmt::Debug for Entity {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Entity {:?} @ {:?}", self.logic, self.physics.pos)
@@ -55,14 +45,14 @@ type TileEntityFactory = &'static Fn(Tile, &TileType, (usize, usize)) -> Option<
 
 /// Definition of a tile type, referenced by tiles.
 #[derive(Clone)]
-struct TileType {
+pub struct TileType {
     /// Color to use to draw that tile.
     // TODO replace with texture
-    color: [f32; 4],
+    pub color: [f32; 4],
     /// Damage suffered from touching that tile.
-    damage: f32,
+    pub damage: f32,
     /// Whether entities will collide with that tile, or pass through.
-    collide: bool,
+    pub collide: bool,
     /// Factory function (creates entity).
     tile_entity: Option<Box<TileEntityFactory>>,
 }
@@ -107,6 +97,13 @@ pub struct Map {
     tiletypes: Vec<TileType>,
     /// The tiles, ordered Y first (bottom to top) then X (left to right).
     pub tiles: Vec<Tile>,
+}
+
+impl Map {
+    pub fn tile(&self, x: usize, y: usize) -> &TileType {
+        let tile = self.tiles[y * self.width + x];
+        &self.tiletypes[tile as usize]
+    }
 }
 
 pub struct World {

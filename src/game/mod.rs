@@ -3,17 +3,19 @@ use piston::input::*;
 use piston::window::{AdvancedWindow, Window};
 use piston_window::{Context, G2d};
 
+use std::cmp::{max, min};
 use std::fmt::{self, Debug, Formatter};
 
 use {GameState, Resources, StateTransition};
+use input::InputManager;
 use utils::one_rest_split_iter;
 use vecmath::*;
 use world::{Entity, EntityLogic, EntityPhysics, MapFactory, Spawnable, World, WorldView};
 
 mod pausemenu;
 
-const CAMERA_MARGIN_X: f32 = 1.0;
-const CAMERA_MARGIN_Y: f32 = 1.0;
+const CAMERA_MARGIN_X: f32 = 20.0;
+const CAMERA_MARGIN_Y: f32 = 20.0;
 
 #[derive(Debug)]
 struct Character {
@@ -29,8 +31,18 @@ impl Character {
 }
 
 impl EntityLogic for Character {
-    fn update(&mut self, entity: &mut EntityPhysics, dt: f64, world: &mut WorldView) -> bool {
+    fn update(&mut self, entity: &mut EntityPhysics, dt: f64,
+              world: &mut WorldView, input: &InputManager) -> bool {
+        // Characters should be in focus
         world.focus(&entity.pos);
+
+        // Move according to input
+        if let Some(i) = input.player_input(0) {
+            // Debug: fake movements
+            entity.pos[0] += i.x() * dt as f32 * 5.0;
+            entity.pos[1] += i.y() * dt as f32 * 5.0;
+        };
+
         true
     }
 }
@@ -153,7 +165,7 @@ impl GameState for Game {
                 spawnables: spawnables,
                 focus: &mut focus,
             };
-            entity.logic.update(&mut entity.physics, dt, &mut world_view);
+            entity.logic.update(&mut entity.physics, dt, &mut world_view, &resources.input_manager);
         });
         if let Some((a, b)) = focus {
             let a = [a.x() - CAMERA_MARGIN_X, a.y() - CAMERA_MARGIN_Y];
@@ -179,12 +191,58 @@ impl GameState for Game {
     fn draw(&mut self, c: Context, g: &mut G2d) {
         use graphics::*;
 
-        const BLUE: [f32; 4] = [0.0, 0.0, 0.5, 1.0];
+        let (width, height) = if let Some(v) = c.viewport {
+            (v.rect[2], v.rect[3])
+        } else {
+            warn!("Got Context with no attached Viewport");
+            return;
+        };
 
         // Clear the screen.
-        clear(BLUE, g);
+        clear([0.0, 0.0, 0.5, 1.0], g);
 
-        // TODO: graphics
+        // Compute transformation from camera
+        let zoom = width as f64 / self.camera.size as f64;
+        let transform = c.transform
+            .trans(0.0, height as f64)
+            .scale(1.0, -1.0)
+            .scale(zoom, zoom)
+            .trans(-self.camera.pos.x() as f64, -self.camera.pos.y() as f64);
+
+        let x1: usize = max(self.camera.pos.x() as i32 - 1, 0) as usize;
+        let y1: usize = max(self.camera.pos.y() as i32 - 1, 0) as usize;
+        let x2: usize = min((self.camera.pos.x() + self.camera.size + 1.0) as usize,
+                            self.world.map.width);
+        let y2: usize = min((self.camera.pos.y() + self.camera.size * self.camera.aspect_ratio + 1.0) as usize,
+                            self.world.map.height);
+
+        for y in y1..y2 {
+            for x in x1..x2 {
+                let tile = self.world.map.tile(x, y);
+                rectangle(tile.color, rectangle::square(x as f64, y as f64, 1.0), transform, g);
+            }
+        }
+
+        // Debug: draw grid
+        for x in x1..x2 {
+            rectangle([1.0, 1.0, 1.0, 1.0],
+                      rectangle::centered([x as f64, (y1 + y2) as f64 * 0.5,
+                                           0.5 / zoom as f64, (y2 - y1) as f64 * 0.5]),
+                      transform, g);
+        }
+        for y in y1..y2 {
+            rectangle([1.0, 1.0, 1.0, 1.0],
+                      rectangle::centered([(x1 + x2) as f64 * 0.5, y as f64,
+                                           (x2 - x1) as f64 * 0.5, 0.5 / zoom as f64]),
+                      transform, g);
+        }
+
+        // Debug: circle entities
+        for entity in self.world.entities.iter() {
+            ellipse([1.0, 0.0, 0.0, 1.0],
+                    rectangle::centered([entity.physics.pos.x() as f64, entity.physics.pos.y() as f64, 0.5, 0.5]),
+                    transform, g);
+        }
     }
 
     fn pause(&mut self, resources: &mut Resources) {

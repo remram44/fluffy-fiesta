@@ -1,6 +1,6 @@
 use piston;
 use piston::input::*;
-use piston::window::AdvancedWindow;
+use piston::window::{AdvancedWindow, Window};
 use piston_window::{Context, G2d};
 
 use std::fmt::{self, Debug, Formatter};
@@ -11,6 +11,9 @@ use vecmath::*;
 use world::{Entity, EntityLogic, EntityPhysics, MapFactory, Spawnable, World, WorldView};
 
 mod pausemenu;
+
+const CAMERA_MARGIN_X: f32 = 1.0;
+const CAMERA_MARGIN_Y: f32 = 1.0;
 
 #[derive(Debug)]
 struct Character {
@@ -27,6 +30,7 @@ impl Character {
 
 impl EntityLogic for Character {
     fn update(&mut self, entity: &mut EntityPhysics, dt: f64, world: &mut WorldView) -> bool {
+        world.focus(&entity.pos);
         true
     }
 }
@@ -56,7 +60,6 @@ impl fmt::Debug for SimpleSpawn {
 impl Spawnable for SimpleSpawn {
     fn spawn(&mut self, pos: &Vector2) -> (bool, Option<Entity>) {
         (false, self.entity_logic.take().map(|entity_logic| {
-            info!("Spawning an entity");
             Some(Entity {
                 physics: EntityPhysics {
                     pos: pos.clone(),
@@ -66,9 +69,17 @@ impl Spawnable for SimpleSpawn {
         }).unwrap_or(None))
     }
 }
+struct Camera {
+    aspect_ratio: f32,
+    pos: Vector2,
+    size: f32,
+    update_rate: f32,
+}
+
 
 pub struct Game {
     pub world: World,
+    camera: Camera,
 }
 
 impl Game {
@@ -79,25 +90,6 @@ impl Game {
             panic!("Can't play on map meant for 0 players");
         }
 
-        /*
-        struct TestEntity;
-
-        impl EntityLogic for TestEntity {
-            fn update(&mut self, entity: &mut EntityPhysics, dt: f64, world: &mut WorldView) -> bool {
-                true
-            }
-        }
-
-        struct TestSpawn;
-
-        impl Spawnable for TestSpawn {
-            fn spawn(&mut self, pos: &Vector2) -> (bool, Option<Entity>) {
-                info!("TestSpawn spawning TestEntity");
-                (false, Some(Entity::new(pos.clone(), TestEntity)))
-            }
-        }
-        */
-
         info!("Creating map");
         let mut world = map_factory.create(42);
 
@@ -105,10 +97,24 @@ impl Game {
         let character = Character::new(0);
         world.spawnables.push(Box::new(SimpleSpawn::new(Box::new(character))));
 
+        let window_size = resources.window.size();
         let mut game = Game {
             world: world,
+            camera: Camera {
+                aspect_ratio: window_size.height as f32 / window_size.width as f32,
+                pos: [0.0, 0.0],
+                size: 10.0,
+                update_rate: 1.0,
+            }
         };
+
+        // Initial update: spawns characters, set camera, ...
         game.update(0.0, resources);
+
+        game.camera.update_rate = 0.1;
+        info!("Camera: aspect_ratio = {:?}", game.camera.aspect_ratio);
+        info!("Camera: Initial position: {:?}, {:?}", game.camera.pos, game.camera.size);
+
         game
     }
 }
@@ -139,14 +145,33 @@ impl GameState for Game {
 
         let map = &mut self.world.map;
         let spawnables = &mut self.world.spawnables;
+        let mut focus = None;
         one_rest_split_iter(&mut self.world.entities, |mut entity, other_entities| {
             let mut world_view = WorldView {
                 map: map,
                 entities: other_entities,
                 spawnables: spawnables,
+                focus: &mut focus,
             };
             entity.logic.update(&mut entity.physics, dt, &mut world_view);
         });
+        if let Some((a, b)) = focus {
+            let a = [a.x() - CAMERA_MARGIN_X, a.y() - CAMERA_MARGIN_Y];
+            let b = [b.x() + CAMERA_MARGIN_X, b.y() + CAMERA_MARGIN_Y];
+
+            let mut camera = &mut self.camera;
+
+            // Compute desired camera position
+            let ratio = camera.aspect_ratio;
+            let size = (b.x() - a.x()).max((b.y() - a.y())/ratio as f32);
+            let pos = [(a.x() + b.x() - size)/2.0,
+                       (a.y() + b.y() - size * ratio)/2.0];
+
+            // Update current camera position according to update rate
+            camera.pos = vec2_add(vec2_scale(camera.pos, 1.0 - camera.update_rate),
+                                  vec2_scale(pos, camera.update_rate));
+            camera.size = camera.size * (1.0 - camera.update_rate) + size * camera.update_rate;
+        }
 
         StateTransition::Continue
     }
@@ -154,17 +179,10 @@ impl GameState for Game {
     fn draw(&mut self, c: Context, g: &mut G2d) {
         use graphics::*;
 
-        const GREEN: [f32; 4] = [0.0, 1.0, 0.0, 1.0];
-        const RED:   [f32; 4] = [1.0, 0.0, 0.0, 1.0];
-
-        let square = rectangle::square(0.0, 0.0, 150.0);
-        let (x, y) = (100.0, 100.0);
+        const BLUE: [f32; 4] = [0.0, 0.0, 0.5, 1.0];
 
         // Clear the screen.
-        clear(GREEN, g);
-
-        // Draw a box around the middle of the screen.
-        rectangle(RED, square, c.transform, g);
+        clear(BLUE, g);
 
         // TODO: graphics
     }

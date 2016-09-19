@@ -71,8 +71,8 @@ struct App {
 
 impl App {
     fn new() -> App {
-        let width = 200;
-        let height = 200;
+        let width = 800;
+        let height = 600;
 
         // Change this to OpenGL::V2_1 if not working.
         let opengl = OpenGL::V3_2;

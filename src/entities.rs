@@ -25,6 +25,7 @@ impl EntityLogic for Spawn {
             } else {
                 let (keep, spawned) = spawnable.spawn(&entity.pos);
                 if let Some(new_entity) = spawned {
+                    info!("Spawning an entity @ {:?}", entity.pos);
                     world.entities.push(new_entity);
                     spawned_one = true;
                 }

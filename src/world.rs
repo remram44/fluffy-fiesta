@@ -11,6 +11,7 @@
 //! them. These are represented by tile entities, which means the tile types has
 //! `has_entity` set to `true`, and an entity exists for each tile of that type.
 
+use std::cmp::{max, min};
 use std::collections::HashMap;
 use std::fmt;
 use std::path::Path;
@@ -123,6 +124,16 @@ pub struct WorldView<'a> {
     pub map: &'a mut Map,
     pub entities: &'a mut Vec<Entity>,
     pub spawnables: &'a mut Vec<Box<Spawnable>>,
+    pub focus: &'a mut Option<(Vector2, Vector2)>,
+}
+
+impl<'a> WorldView<'a> {
+    pub fn focus(&mut self, pos: &Vector2) {
+        *self.focus = Some(self.focus.map(|old| {
+            ([old.0.x().min(pos.x()), old.0.y().min(pos.y())],
+             [old.1.x().max(pos.x()), old.1.y().max(pos.y())])
+        }).unwrap_or_else(|| { (pos.clone(), pos.clone()) }));
+    }
 }
 
 /// Initial map definition, loaded from disk.

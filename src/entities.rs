@@ -1,6 +1,6 @@
 use std::mem::swap;
 
-use input::InputManager;
+use ::Resources;
 use world::{EntityLogic, EntityPhysics, WorldView};
 
 #[derive(Debug)]
@@ -15,7 +15,7 @@ impl Spawn {
 
 impl EntityLogic for Spawn {
     fn update(&mut self, entity: &mut EntityPhysics, dt: f64,
-              world: &mut WorldView, input: &InputManager) -> bool {
+              world: &mut WorldView, resources: &Resources) -> bool {
         // Move out all spawnables to avoid multiple borrows from Game
         let mut spawnables = Vec::new();
         swap(&mut spawnables, &mut world.spawnables);

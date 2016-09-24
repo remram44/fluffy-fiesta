@@ -15,13 +15,13 @@ use std::collections::HashMap;
 use std::fmt;
 use std::path::Path;
 
-use input::InputManager;
+use ::Resources;
 use vecmath::*;
 
 /// This represents the logic for a type of entity.
 pub trait EntityLogic: fmt::Debug {
     fn update(&mut self, entity: &mut EntityPhysics, dt: f64,
-              world: &mut WorldView, input: &InputManager) -> bool;
+              world: &mut WorldView, resources: &Resources) -> bool;
 }
 
 /// This represents the physical attributes of an entity.

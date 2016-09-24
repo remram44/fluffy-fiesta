@@ -32,12 +32,12 @@ impl Character {
 
 impl EntityLogic for Character {
     fn update(&mut self, entity: &mut EntityPhysics, dt: f64,
-              world: &mut WorldView, input: &InputManager) -> bool {
+              world: &mut WorldView, resources: &Resources) -> bool {
         // Characters should be in focus
         world.focus(&entity.pos);
 
         // Move according to input
-        if let Some(i) = input.player_input(0) {
+        if let Some(i) = resources.input_manager.player_input(0) {
             // Debug: fake movements
             entity.pos[0] += i.x() * dt as f32 * 5.0;
             entity.pos[1] += i.y() * dt as f32 * 5.0;
@@ -81,13 +81,13 @@ impl Spawnable for SimpleSpawn {
         }).unwrap_or(None))
     }
 }
+
 struct Camera {
     aspect_ratio: f32,
     pos: Vector2,
     size: f32,
     update_rate: f32,
 }
-
 
 pub struct Game {
     pub world: World,
@@ -165,7 +165,7 @@ impl GameState for Game {
                 spawnables: spawnables,
                 focus: &mut focus,
             };
-            entity.logic.update(&mut entity.physics, dt, &mut world_view, &resources.input_manager);
+            entity.logic.update(&mut entity.physics, dt, &mut world_view, resources);
         });
         if let Some((a, b)) = focus {
             let a = [a.x() - CAMERA_MARGIN_X, a.y() - CAMERA_MARGIN_Y];

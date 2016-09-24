@@ -43,6 +43,10 @@ impl Character {
     }
 }
 
+const CHAR_W: f32 = 0.63;
+const CHAR_H: f32 = 1.29;
+const MARGIN: f32 = 0.05;
+
 impl EntityLogic for Character {
     fn update(&mut self, entity: &mut EntityPhysics, dt: f64,
               world: &mut WorldView, resources: &Resources, sprite: &mut Option<Sprite>) -> bool {
@@ -58,11 +62,13 @@ impl EntityLogic for Character {
         // Movements
         let mut on_ground = false;
         if entity.speed.y() <= 0.05 {
-            if let Some(tile) = world.map.tilef(entity.pos.x(), entity.pos.y() - 0.70) {
+            if let Some(tile) = world.map.tilef(entity.pos.x(),
+                                                entity.pos.y() - CHAR_H / 2. - MARGIN) {
                 if tile.collide {
                     on_ground = true;
                     entity.speed[1] = 0.0;
-                    entity.pos[1] = (entity.pos.y() - 0.70).floor() + 1.60;
+                    entity.pos[1] = (entity.pos.y() - CHAR_H / 2. - MARGIN).floor() +
+                                    1. + CHAR_H / 2.;
                 }
             }
         }
@@ -75,6 +81,19 @@ impl EntityLogic for Character {
             entity.speed[1] += -10.0 * dt as f32;
         }
 
+        let dir = entity.speed.x().signum();
+        for height in [-1.0f32, 1.0].iter() {
+            if let Some(tile) = world.map.tilef(entity.pos.x() + (CHAR_W / 2. + MARGIN) * dir,
+                                                entity.pos.y() - (CHAR_H / 2. - MARGIN) * height) {
+                if tile.collide {
+                    entity.pos[0] = (entity.pos.x() + (CHAR_W / 2. + MARGIN) * dir).floor() +
+                        -dir * (CHAR_W / 2. + 0.5) + 0.5;
+                    entity.speed[0] = 0.0;
+                    break;
+                }
+            }
+        }
+
         entity.pos = vec2_add(entity.pos, vec2_scale(entity.speed, dt as f32));
 
         // Set sprite
@@ -82,7 +101,7 @@ impl EntityLogic for Character {
         *sprite = Some(Sprite {
             sheet: self.sprite_sheet.clone(),
             coords: [0, 0, 213, 428],
-            size: [0.63, 1.29],
+            size: [CHAR_W, CHAR_H],
         });
 
         true

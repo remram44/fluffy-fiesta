@@ -198,6 +198,9 @@ impl MapFactory {
         for x in 40..60 {
             tiles[0 * 100 + x] = 3;
         }
+        for x in 0..19 {
+            tiles[1 * 100 + 2 + 5 * x] = 0;
+        }
         MapFactory {
             width: 100,
             height: 100,

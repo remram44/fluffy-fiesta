@@ -58,11 +58,12 @@ impl EntityLogic for Character {
         // Movements
         let mut on_ground = false;
         if entity.speed.y() <= 0.05 {
-            let ground_tile = world.map.tilef(entity.pos.x(), entity.pos.y() - 0.70);
-            if ground_tile.collide {
-                on_ground = true;
-                entity.speed[1] = 0.0;
-                entity.pos[1] = (entity.pos.y() - 0.70).floor() + 1.60;
+            if let Some(tile) = world.map.tilef(entity.pos.x(), entity.pos.y() - 0.70) {
+                if tile.collide {
+                    on_ground = true;
+                    entity.speed[1] = 0.0;
+                    entity.pos[1] = (entity.pos.y() - 0.70).floor() + 1.60;
+                }
             }
         }
         if on_ground {
@@ -263,7 +264,7 @@ impl GameState for Game {
         // Draw map
         for y in y1..y2 {
             for x in x1..x2 {
-                let tile = self.world.map.tile(x, y);
+                let tile = self.world.map.tile(x, y).unwrap();
                 let image = Image::new()
                     .src_rect(tile.sprite.coords)
                     .rect([(x as f32 + 0.5 - tile.sprite.size[0] / 2.0) as f64,

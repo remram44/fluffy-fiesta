@@ -78,12 +78,18 @@ pub struct Map {
 }
 
 impl Map {
-    pub fn tile(&self, x: i32, y: i32) -> &TileType {
-        let tile = self.tiles[y as usize * self.width + x as usize];
-        &self.tiletypes[tile as usize]
+    pub fn tile(&self, x: i32, y: i32) -> Option<&TileType> {
+        if x >= 0 && self.width > x as usize &&
+            y >= 0 && self.height > y as usize
+        {
+            let tile = self.tiles[y as usize * self.width + x as usize];
+            Some(&self.tiletypes[tile as usize])
+        } else {
+            None
+        }
     }
 
-    pub fn tilef(&self, x: f32, y: f32) -> &TileType {
+    pub fn tilef(&self, x: f32, y: f32) -> Option<&TileType> {
         self.tile(x as i32, y as i32)
     }
 }

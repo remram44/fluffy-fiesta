@@ -28,6 +28,7 @@ pub trait EntityLogic: fmt::Debug {
 /// This represents the physical attributes of an entity.
 pub struct EntityPhysics {
     pub pos: Vector2,
+    pub speed: Vector2,
 }
 
 /// This is an entity in the world, with a position and pointer to the logic.
@@ -127,6 +128,7 @@ impl EntityDefinition {
         Some(Entity {
             physics: EntityPhysics {
                 pos: self.position,
+                speed: [0.0, 0.0],
             },
             logic: logic,
             sprite: None,

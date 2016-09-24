@@ -20,6 +20,8 @@ const CAMERA_MARGIN_Y: f32 = 5.0;
 
 struct Character {
     player: usize,
+    dir: f32,
+    jump: bool,
     sprite_sheet: Rc<SpriteSheet>,
 }
 
@@ -33,6 +35,8 @@ impl Character {
     fn new(player: usize, resources: &mut Resources) -> Character {
         Character {
             player: player,
+            dir: 0.0,
+            jump: false,
             sprite_sheet: resources.load_spritesheet(
                 "alien/green__0000_idle_1.png"),
         }
@@ -45,14 +49,37 @@ impl EntityLogic for Character {
         // Characters should be in focus
         world.focus(&entity.pos);
 
-        // Move according to input
+        // Read input
         if let Some(i) = resources.input_manager.player_input(0) {
-            // Debug: fake movements
-            entity.pos[0] += i.x() * dt as f32 * 5.0;
-            entity.pos[1] += i.y() * dt as f32 * 5.0;
+            self.dir = i.x();
+            self.jump = i.jump();
         };
 
+        // Movements
+        let mut on_ground = false;
+        if entity.speed.y() <= 0.05 {
+            let x = entity.pos.x() as i32;
+            let y = (entity.pos.y() - 0.70) as i32;
+            let ground_tile = world.map.tile(x as usize, y as usize);
+            if ground_tile.collide {
+                on_ground = true;
+                entity.speed[1] = 0.0;
+                entity.pos[1] = y as f32 + 1.60;
+            }
+        }
+        if on_ground {
+            entity.speed[0] = self.dir * 5.0;
+            if self.jump {
+                entity.speed[1] = 5.0;
+            }
+        } else {
+            entity.speed[1] += -10.0 * dt as f32;
+        }
+
+        entity.pos = vec2_add(entity.pos, vec2_scale(entity.speed, dt as f32));
+
         // Set sprite
+        // TODO: Animation
         *sprite = Some(Sprite {
             sheet: self.sprite_sheet.clone(),
             coords: [0, 0, 213, 428],
@@ -91,6 +118,7 @@ impl Spawnable for SimpleSpawn {
             Some(Entity {
                 physics: EntityPhysics {
                     pos: pos.clone(),
+                    speed: [0.0, 0.0],
                 },
                 logic: entity_logic,
                 sprite: None,

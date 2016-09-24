@@ -264,15 +264,16 @@ impl GameState for Game {
         // Draw map
         for y in y1..y2 {
             for x in x1..x2 {
-                let tile = self.world.map.tile(x, y).unwrap();
-                let image = Image::new()
-                    .src_rect(tile.sprite.coords)
-                    .rect([(x as f32 + 0.5 - tile.sprite.size[0] / 2.0) as f64,
-                           (y as f32 + 0.5 + tile.sprite.size[1] / 2.0) as f64,
-                           tile.sprite.size[0] as f64,
-                           -tile.sprite.size[1] as f64]);
-                image.draw(&tile.sprite.sheet.texture, &DrawState::default(),
-                           transform, g);
+                if let Some(ref sprite) = self.world.map.tile(x, y).unwrap().sprite {
+                    let image = Image::new()
+                        .src_rect(sprite.coords)
+                        .rect([(x as f32 + 0.5 - sprite.size[0] / 2.0) as f64,
+                               (y as f32 + 0.5 + sprite.size[1] / 2.0) as f64,
+                               sprite.size[0] as f64,
+                               -sprite.size[1] as f64]);
+                    image.draw(&sprite.sheet.texture, &DrawState::default(),
+                               transform, g);
+                }
             }
         }
 

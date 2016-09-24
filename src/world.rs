@@ -49,7 +49,7 @@ type TileEntityFactory = &'static Fn(Tile, &TileType, (usize, usize)) -> Option<
 /// Definition of a tile type, referenced by tiles.
 pub struct TileType {
     /// Sprite for that tile.
-    pub sprite: Sprite,
+    pub sprite: Option<Sprite>,
     /// Damage suffered from touching that tile.
     pub damage: f32,
     /// Whether entities will collide with that tile, or pass through.
@@ -262,11 +262,11 @@ impl MapFactory {
     pub fn create(&self, resources: &mut Resources, seed: u32) -> World {
         let tiletypes: Vec<TileType> = self.tiletypes.iter().map(|td| {
             TileType {
-                sprite: Sprite {
+                sprite: Some(Sprite {
                     sheet: resources.load_spritesheet(td.sprite_sheet),
                     coords: td.sprite_coords,
                     size: [1.0, 1.0],
-                },
+                }),
                 damage: td.damage,
                 collide: td.collide,
                 tile_entity: td.tile_entity.is_some(),

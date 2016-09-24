@@ -3,7 +3,6 @@ use piston_window::texture::ImageSize;
 
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::io;
 use std::path::Path;
 use std::rc::{Rc, Weak};
 

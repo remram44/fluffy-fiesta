@@ -3,7 +3,7 @@ use piston::input::*;
 
 const INPUT_THRESHOLD: f32 = 0.8;
 
-struct PlayerInput {
+pub struct PlayerInput {
     d_right: bool,
     d_left: bool,
     d_up: bool,

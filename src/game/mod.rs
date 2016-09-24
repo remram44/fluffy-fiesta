@@ -7,7 +7,6 @@ use std::cmp::{max, min};
 use std::fmt::{self, Debug, Formatter};
 
 use {GameState, Resources, StateTransition};
-use input::InputManager;
 use utils::one_rest_split_iter;
 use vecmath::*;
 use world::{Entity, EntityLogic, EntityPhysics, MapFactory, Spawnable, World, WorldView};

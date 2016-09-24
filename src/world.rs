@@ -64,29 +64,6 @@ pub trait Spawnable {
     fn spawn(&mut self, pos: &Vector2) -> (bool, Option<Entity>);
 }
 
-struct EntityDefinition {
-    type_id: String,
-    position: Vector2,
-}
-
-impl EntityDefinition {
-    fn create(&self, seed: u32) -> Option<Entity> {
-        let logic = match self.type_id.as_ref() {
-            "f.spawn" => Box::new(::entities::Spawn::new()),
-            _ => {
-                warn!("Can't create unknown entity type {}", self.type_id);
-                return None
-            },
-        };
-        Some(Entity {
-            physics: EntityPhysics {
-                pos: self.position,
-            },
-            logic: logic,
-        })
-    }
-}
-
 /// The map, representing the status of the world at a given instant.
 pub struct Map {
     /// Width in number of tiles.
@@ -130,6 +107,29 @@ impl<'a> WorldView<'a> {
             ([old.0.x().min(pos.x()), old.0.y().min(pos.y())],
              [old.1.x().max(pos.x()), old.1.y().max(pos.y())])
         }).unwrap_or_else(|| { (pos.clone(), pos.clone()) }));
+    }
+}
+
+struct EntityDefinition {
+    type_id: String,
+    position: Vector2,
+}
+
+impl EntityDefinition {
+    fn create(&self, seed: u32) -> Option<Entity> {
+        let logic = match self.type_id.as_ref() {
+            "f.spawn" => Box::new(::entities::Spawn::new()),
+            _ => {
+                warn!("Can't create unknown entity type {}", self.type_id);
+                return None
+            },
+        };
+        Some(Entity {
+            physics: EntityPhysics {
+                pos: self.position,
+            },
+            logic: logic,
+        })
     }
 }
 

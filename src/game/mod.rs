@@ -58,13 +58,11 @@ impl EntityLogic for Character {
         // Movements
         let mut on_ground = false;
         if entity.speed.y() <= 0.05 {
-            let x = entity.pos.x() as i32;
-            let y = (entity.pos.y() - 0.70) as i32;
-            let ground_tile = world.map.tile(x as usize, y as usize);
+            let ground_tile = world.map.tilef(entity.pos.x(), entity.pos.y() - 0.70);
             if ground_tile.collide {
                 on_ground = true;
                 entity.speed[1] = 0.0;
-                entity.pos[1] = y as f32 + 1.60;
+                entity.pos[1] = (entity.pos.y() - 0.70).floor() + 1.60;
             }
         }
         if on_ground {
@@ -255,12 +253,12 @@ impl GameState for Game {
             .scale(zoom, zoom)
             .trans(-self.camera.pos.x() as f64, -self.camera.pos.y() as f64);
 
-        let x1: usize = max(self.camera.pos.x() as i32 - 1, 0) as usize;
-        let y1: usize = max(self.camera.pos.y() as i32 - 1, 0) as usize;
-        let x2: usize = min((self.camera.pos.x() + self.camera.size + 1.0) as usize,
-                            self.world.map.width);
-        let y2: usize = min((self.camera.pos.y() + self.camera.size * self.camera.aspect_ratio + 1.0) as usize,
-                            self.world.map.height);
+        let x1 = max(self.camera.pos.x() as i32 - 1, 0);
+        let y1 = max(self.camera.pos.y() as i32 - 1, 0);
+        let x2 = min((self.camera.pos.x() + self.camera.size + 1.0) as i32,
+                     self.world.map.width as i32);
+        let y2 = min((self.camera.pos.y() + self.camera.size * self.camera.aspect_ratio + 1.0) as i32,
+                            self.world.map.height as i32);
 
         // Draw map
         for y in y1..y2 {

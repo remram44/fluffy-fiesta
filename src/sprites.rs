@@ -9,7 +9,7 @@ use std::rc::{Rc, Weak};
 use ::Window;
 
 pub struct SpriteSheet {
-    texture: piston_window::G2dTexture<'static>,
+    pub texture: piston_window::G2dTexture<'static>,
     width: usize,
     height: usize,
 }
@@ -33,8 +33,9 @@ impl SpriteSheet {
 }
 
 pub struct Sprite {
-    sheet: Rc<SpriteSheet>,
-    coords: (usize, usize),
+    pub sheet: Rc<SpriteSheet>,
+    pub coords: [i32; 4],
+    pub size: [f32; 2],
 }
 
 pub struct SpriteManager {

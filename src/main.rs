@@ -8,6 +8,7 @@ extern crate sdl2_window;
 extern crate vecmath as vecmath_lib;
 
 use std::fmt::Debug;
+use std::rc::Rc;
 
 use piston::window::WindowSettings;
 use piston_window::{Context, G2d, OpenGL, PistonWindow};
@@ -24,6 +25,7 @@ mod vecmath;
 mod world;
 
 use input::InputManager;
+use sprites::{SpriteManager, SpriteSheet};
 
 type Window = PistonWindow<Sdl2Window>;
 
@@ -63,6 +65,13 @@ pub trait GameState : Debug {
 pub struct Resources {
     window: Window,
     input_manager: InputManager,
+    sprite_manager: SpriteManager,
+}
+
+impl Resources {
+    pub fn load_spritesheet(&mut self, name: &str) -> Rc<SpriteSheet> {
+        self.sprite_manager.load(&mut self.window, name)
+    }
 }
 
 struct App {
@@ -93,6 +102,7 @@ impl App {
             resources: Resources {
                 window: window,
                 input_manager: InputManager::new(),
+                sprite_manager: SpriteManager::new(),
             },
         };
         let game = game::Game::new(world::MapFactory::example(), &mut app.resources);

@@ -5,33 +5,43 @@ use piston_window::{Context, G2d};
 
 use std::cmp::{max, min};
 use std::fmt::{self, Debug, Formatter};
+use std::rc::Rc;
 
 use {GameState, Resources, StateTransition};
+use sprites::{Sprite, SpriteSheet};
 use utils::one_rest_split_iter;
 use vecmath::*;
 use world::{Entity, EntityLogic, EntityPhysics, MapFactory, Spawnable, World, WorldView};
 
 mod pausemenu;
 
-const CAMERA_MARGIN_X: f32 = 20.0;
-const CAMERA_MARGIN_Y: f32 = 20.0;
+const CAMERA_MARGIN_X: f32 = 5.0;
+const CAMERA_MARGIN_Y: f32 = 5.0;
 
-#[derive(Debug)]
 struct Character {
     player: usize,
+    sprite_sheet: Rc<SpriteSheet>,
+}
+
+impl fmt::Debug for Character {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Character for player={:?}", self.player)
+    }
 }
 
 impl Character {
-    fn new(player: usize) -> Character {
+    fn new(player: usize, resources: &mut Resources) -> Character {
         Character {
             player: player,
+            sprite_sheet: resources.load_spritesheet(
+                "alien/green__0000_idle_1.png"),
         }
     }
 }
 
 impl EntityLogic for Character {
     fn update(&mut self, entity: &mut EntityPhysics, dt: f64,
-              world: &mut WorldView, resources: &Resources) -> bool {
+              world: &mut WorldView, resources: &Resources, sprite: &mut Option<Sprite>) -> bool {
         // Characters should be in focus
         world.focus(&entity.pos);
 
@@ -41,6 +51,13 @@ impl EntityLogic for Character {
             entity.pos[0] += i.x() * dt as f32 * 5.0;
             entity.pos[1] += i.y() * dt as f32 * 5.0;
         };
+
+        // Set sprite
+        *sprite = Some(Sprite {
+            sheet: self.sprite_sheet.clone(),
+            coords: [0, 0, 213, 428],
+            size: [0.63, 1.29],
+        });
 
         true
     }
@@ -76,6 +93,7 @@ impl Spawnable for SimpleSpawn {
                     pos: pos.clone(),
                 },
                 logic: entity_logic,
+                sprite: None,
             })
         }).unwrap_or(None))
     }
@@ -105,7 +123,7 @@ impl Game {
         let mut world = map_factory.create(42);
 
         info!("Creating {} characters", 1);
-        let character = Character::new(0);
+        let character = Character::new(0, resources);
         world.spawnables.push(Box::new(SimpleSpawn::new(Box::new(character))));
 
         let window_size = resources.window.size();
@@ -164,7 +182,8 @@ impl GameState for Game {
                 spawnables: spawnables,
                 focus: &mut focus,
             };
-            entity.logic.update(&mut entity.physics, dt, &mut world_view, resources);
+            entity.logic.update(&mut entity.physics, dt,
+                                &mut world_view, resources, &mut entity.sprite);
         });
         if let Some((a, b)) = focus {
             let a = [a.x() - CAMERA_MARGIN_X, a.y() - CAMERA_MARGIN_Y];
@@ -215,6 +234,7 @@ impl GameState for Game {
         let y2: usize = min((self.camera.pos.y() + self.camera.size * self.camera.aspect_ratio + 1.0) as usize,
                             self.world.map.height);
 
+        // Draw map
         for y in y1..y2 {
             for x in x1..x2 {
                 let tile = self.world.map.tile(x, y);
@@ -236,11 +256,26 @@ impl GameState for Game {
                       transform, g);
         }
 
-        // Debug: circle entities
+        // Draw entities
         for entity in self.world.entities.iter() {
-            ellipse([1.0, 0.0, 0.0, 1.0],
+            if let Some(ref sprite) = entity.sprite {
+                let image = Image::new()
+                    .src_rect(sprite.coords)
+                    .rect([(entity.physics.pos.x() - sprite.size[0] / 2.0) as f64,
+                           (entity.physics.pos.y() + sprite.size[1] / 2.0) as f64,
+                           sprite.size[0] as f64,
+                           -sprite.size[1] as f64]);
+                image.draw(&sprite.sheet.texture, &DrawState::default(),
+                           transform, g);
+            } else {
+                // Debug: circle invisible entities
+                let circle = CircleArc::new(
+                    [1.0, 0.0, 0.0, 1.0],
+                    0.05, 0.0, 2.0 * ::std::f64::consts::PI);
+                circle.draw(
                     rectangle::centered([entity.physics.pos.x() as f64, entity.physics.pos.y() as f64, 0.5, 0.5]),
-                    transform, g);
+                    &DrawState::default(), transform, g);
+            }
         }
     }
 

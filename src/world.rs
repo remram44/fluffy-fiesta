@@ -16,12 +16,13 @@ use std::fmt;
 use std::path::Path;
 
 use ::Resources;
+use sprites::Sprite;
 use vecmath::*;
 
 /// This represents the logic for a type of entity.
 pub trait EntityLogic: fmt::Debug {
     fn update(&mut self, entity: &mut EntityPhysics, dt: f64,
-              world: &mut WorldView, resources: &Resources) -> bool;
+              world: &mut WorldView, resources: &Resources, sprite: &mut Option<Sprite>) -> bool;
 }
 
 /// This represents the physical attributes of an entity.
@@ -33,6 +34,7 @@ pub struct EntityPhysics {
 pub struct Entity {
     pub physics: EntityPhysics,
     pub logic: Box<EntityLogic>,
+    pub sprite: Option<Sprite>,
 }
 
 impl fmt::Debug for Entity {
@@ -129,6 +131,7 @@ impl EntityDefinition {
                 pos: self.position,
             },
             logic: logic,
+            sprite: None,
         })
     }
 }

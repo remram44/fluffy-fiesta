@@ -18,6 +18,7 @@ use sdl2_window::Sdl2Window;
 mod entities;
 mod game;
 mod input;
+mod sprites;
 mod utils;
 mod vecmath;
 mod world;

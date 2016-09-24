@@ -46,17 +46,15 @@ impl fmt::Debug for Entity {
 type TileEntityFactory = &'static Fn(Tile, &TileType, (usize, usize)) -> Option<Entity>;
 
 /// Definition of a tile type, referenced by tiles.
-#[derive(Clone)]
 pub struct TileType {
-    /// Color to use to draw that tile.
-    // TODO replace with texture
-    pub color: [f32; 4],
+    /// Sprite for that tile.
+    pub sprite: Sprite,
     /// Damage suffered from touching that tile.
     pub damage: f32,
     /// Whether entities will collide with that tile, or pass through.
     pub collide: bool,
-    /// Factory function (creates entity).
-    tile_entity: Option<Box<TileEntityFactory>>,
+    /// Whether an entity is associated with this tile.
+    tile_entity: bool,
 }
 
 /// A tile in the map, just references a TileType.
@@ -136,6 +134,19 @@ impl EntityDefinition {
     }
 }
 
+pub struct TileTypeDefinition {
+    /// Image file.
+    pub sprite_sheet: &'static str,
+    /// Coordinates of sprite within image file.
+    pub sprite_coords: [i32; 4],
+    /// Damage suffered from touching that tile.
+    pub damage: f32,
+    /// Whether entities will collide with that tile, or pass through.
+    pub collide: bool,
+    /// Factory function (creates entity).
+    tile_entity: Option<Box<TileEntityFactory>>,
+}
+
 /// Initial map definition, loaded from disk.
 ///
 /// This can be turned into a live Map using `create()`.
@@ -143,7 +154,7 @@ pub struct MapFactory {
     pub width: usize,
     pub height: usize,
     pub nb_players: usize,
-    tiletypes: Vec<TileType>,
+    tiletypes: Vec<TileTypeDefinition>,
     tiles: Vec<Tile>,
     entities: Vec<EntityDefinition>,
 }
@@ -180,26 +191,34 @@ impl MapFactory {
             height: 100,
             nb_players: 4,
             tiletypes: vec![
-                TileType {
-                    color: [0.5, 0.5, 0.5, 1.0],
+                // Wall
+                TileTypeDefinition {
+                    sprite_sheet: "map/castleCenter.png",
+                    sprite_coords: [0, 0, 256, 256],
                     damage: 0.0,
                     collide: true,
                     tile_entity: None,
                 },
-                TileType {
-                    color: [0.0, 0.0, 0.0, 1.0],
+                // Background
+                TileTypeDefinition {
+                    sprite_sheet: "map/bg_castle.png",
+                    sprite_coords: [0, 0, 256, 256],
                     damage: 0.0,
                     collide: false,
                     tile_entity: None,
                 },
-                TileType {
-                    color: [0.0, 0.0, 1.0, 1.0],
+                // Sky
+                TileTypeDefinition {
+                    sprite_sheet: "map/bg.png",
+                    sprite_coords: [0, 0, 256, 256],
                     damage: 0.0,
                     collide: false,
                     tile_entity: None,
                 },
-                TileType {
-                    color: [1.0, 0.0, 0.0, 1.0],
+                // Lava
+                TileTypeDefinition {
+                    sprite_sheet: "map/liquidLava.png",
+                    sprite_coords: [0, 0, 256, 256],
                     damage: 1.0,
                     collide: false,
                     tile_entity: None,
@@ -228,7 +247,20 @@ impl MapFactory {
     }
 
     /// Create a live `Map` from this map definition.
-    pub fn create(&self, seed: u32) -> World {
+    pub fn create(&self, resources: &mut Resources, seed: u32) -> World {
+        let tiletypes: Vec<TileType> = self.tiletypes.iter().map(|td| {
+            TileType {
+                sprite: Sprite {
+                    sheet: resources.load_spritesheet(td.sprite_sheet),
+                    coords: td.sprite_coords,
+                    size: [1.0, 1.0],
+                },
+                damage: td.damage,
+                collide: td.collide,
+                tile_entity: td.tile_entity.is_some(),
+            }
+        }).collect();
+
         let mut tile_entities = HashMap::new();
 
         let tiles = self.tiles.clone();
@@ -237,7 +269,7 @@ impl MapFactory {
                 let tile = tiles[y * self.width + x];
                 let tiletype = &self.tiletypes[tile as usize];
                 if let Some(ref factory) = tiletype.tile_entity {
-                    if let Some(entity) = factory(tile, tiletype, (x, y)) {
+                    if let Some(entity) = factory(tile, &tiletypes[tile as usize], (x, y)) {
                         tile_entities.insert((x, y), entity);
                     }
                 }
@@ -248,7 +280,7 @@ impl MapFactory {
             map: Map {
                 width: self.width,
                 height: self.height,
-                tiletypes: self.tiletypes.clone(),
+                tiletypes: tiletypes,
                 tiles: tiles,
             },
             entities: self.entities.iter().filter_map(|e| e.create(seed)).collect(),

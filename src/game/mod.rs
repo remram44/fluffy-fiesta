@@ -120,7 +120,7 @@ impl Game {
         }
 
         info!("Creating map");
-        let mut world = map_factory.create(42);
+        let mut world = map_factory.create(resources, 42);
 
         info!("Creating {} characters", 1);
         let character = Character::new(0, resources);
@@ -238,7 +238,14 @@ impl GameState for Game {
         for y in y1..y2 {
             for x in x1..x2 {
                 let tile = self.world.map.tile(x, y);
-                rectangle(tile.color, rectangle::square(x as f64, y as f64, 1.0), transform, g);
+                let image = Image::new()
+                    .src_rect(tile.sprite.coords)
+                    .rect([(x as f32 + 0.5 - tile.sprite.size[0] / 2.0) as f64,
+                           (y as f32 + 0.5 + tile.sprite.size[1] / 2.0) as f64,
+                           tile.sprite.size[0] as f64,
+                           -tile.sprite.size[1] as f64]);
+                image.draw(&tile.sprite.sheet.texture, &DrawState::default(),
+                           transform, g);
             }
         }
 

@@ -1,5 +1,6 @@
 use conrod::{self, Labelable, Positionable, Sizeable, Widget};
 use piston;
+use piston::window::Window;
 use piston_window::{self, Context, G2d};
 
 use std::fmt::{self, Debug, Formatter};
@@ -36,10 +37,11 @@ impl PauseMenu {
         ui.fonts.insert_from_file(font_path).unwrap();
 
         // Create a texture to use for efficiently caching text on the GPU.
+        let window_size = resources.window.size();
         let text_texture_cache =
             conrod::backend::piston_window::GlyphCache::new(&mut resources.window,
-                                                            resources.width,
-                                                            resources.height);
+                                                            window_size.width,
+                                                            window_size.height);
 
         // The image map describing each of our widget->image mappings (in our case, none).
         let image_map = conrod::image::Map::new();

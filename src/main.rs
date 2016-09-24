@@ -24,6 +24,8 @@ mod world;
 
 use input::InputManager;
 
+type Window = PistonWindow<Sdl2Window>;
+
 /// A transition requested by a game state.
 pub enum StateTransition {
     /// Stay on this state.
@@ -58,9 +60,7 @@ pub trait GameState : Debug {
 }
 
 pub struct Resources {
-    window: PistonWindow<Sdl2Window>,
-    width: u32,
-    height: u32,
+    window: Window,
     input_manager: InputManager,
 }
 
@@ -78,7 +78,7 @@ impl App {
         let opengl = OpenGL::V3_2;
 
         // Create an SDL2 window.
-        let window: PistonWindow<Sdl2Window> = WindowSettings::new(
+        let window: Window = WindowSettings::new(
                 "fluffy-fiesta",
                 [width, height]
             )
@@ -91,8 +91,6 @@ impl App {
             states: Vec::new(),
             resources: Resources {
                 window: window,
-                width: width,
-                height: height,
                 input_manager: InputManager::new(),
             },
         };

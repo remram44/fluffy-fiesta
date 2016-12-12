@@ -78,6 +78,9 @@ impl EntityLogic for Character {
                 entity.speed[1] = 5.0;
             }
         } else {
+            if entity.speed.x() * self.dir.signum() < self.dir.abs() * 5.0 {
+                entity.speed[0] += self.dir * 20.0 * dt as f32;
+            }
             entity.speed[1] += -10.0 * dt as f32;
         }
 

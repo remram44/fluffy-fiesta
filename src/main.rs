@@ -3,6 +3,7 @@ extern crate env_logger;
 extern crate gfx_core;
 extern crate graphics;
 #[macro_use] extern crate log;
+extern crate rand;
 extern crate piston;
 extern crate piston_window;
 extern crate sdl2_window;
@@ -17,6 +18,7 @@ use piston_window::{Context, G2d, OpenGL, PistonWindow};
 use piston::input::*;
 use sdl2_window::Sdl2Window;
 
+mod animation;
 mod entities;
 mod game;
 mod input;

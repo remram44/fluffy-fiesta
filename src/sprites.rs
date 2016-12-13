@@ -32,6 +32,7 @@ impl SpriteSheet {
     }
 }
 
+#[derive(Clone)]
 pub struct Sprite {
     pub sheet: Rc<SpriteSheet>,
     pub coords: [f64; 4],

@@ -51,7 +51,7 @@ pub struct TileType {
     /// Sprite for that tile.
     pub sprite: Option<Sprite>,
     /// Damage suffered from touching that tile.
-    pub damage: f32,
+    pub damage: f64,
     /// Whether entities will collide with that tile, or pass through.
     pub collide: bool,
     /// Whether an entity is associated with this tile.
@@ -89,7 +89,7 @@ impl Map {
         }
     }
 
-    pub fn tilef(&self, x: f32, y: f32) -> Option<&TileType> {
+    pub fn tilef(&self, x: f64, y: f64) -> Option<&TileType> {
         self.tile(x as i32, y as i32)
     }
 }
@@ -152,7 +152,7 @@ pub struct TileTypeDefinition {
     /// Coordinates of sprite within image file.
     pub sprite_coords: [i32; 4],
     /// Damage suffered from touching that tile.
-    pub damage: f32,
+    pub damage: f64,
     /// Whether entities will collide with that tile, or pass through.
     pub collide: bool,
     /// Factory function (creates entity).

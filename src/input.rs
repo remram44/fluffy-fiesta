@@ -1,7 +1,7 @@
 use piston;
 use piston::input::*;
 
-const INPUT_THRESHOLD: f32 = 0.8;
+const INPUT_THRESHOLD: f64 = 0.8;
 
 pub struct PlayerInput {
     d_right: bool,
@@ -10,8 +10,8 @@ pub struct PlayerInput {
     d_down: bool,
     d_jump: bool,
 
-    a_x: f32,
-    a_y: f32,
+    a_x: f64,
+    a_y: f64,
 }
 
 impl PlayerInput {
@@ -27,7 +27,7 @@ impl PlayerInput {
         }
     }
 
-    fn da_input(a: f32, d_neg: bool, d_pos: bool) -> f32 {
+    fn da_input(a: f64, d_neg: bool, d_pos: bool) -> f64 {
         let value = a +
             (if d_neg { -1.0 } else { 0.0 }) +
             (if d_pos { 1.0 } else { 0.0 });
@@ -40,11 +40,11 @@ impl PlayerInput {
         }
     }
 
-    pub fn x(&self) -> f32 {
+    pub fn x(&self) -> f64 {
         PlayerInput::da_input(self.a_x, self.d_left, self.d_right)
     }
 
-    pub fn y(&self) -> f32 {
+    pub fn y(&self) -> f64 {
         PlayerInput::da_input(self.a_y, self.d_down, self.d_up)
     }
 

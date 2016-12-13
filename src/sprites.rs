@@ -35,7 +35,7 @@ impl SpriteSheet {
 pub struct Sprite {
     pub sheet: Rc<SpriteSheet>,
     pub coords: [i32; 4],
-    pub size: [f32; 2],
+    pub size: [f64; 2],
 }
 
 pub struct SpriteManager {

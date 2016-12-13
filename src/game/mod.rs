@@ -15,12 +15,12 @@ use world::{Entity, EntityLogic, EntityPhysics, MapFactory, Spawnable, World, Wo
 
 mod pausemenu;
 
-const CAMERA_MARGIN_X: f32 = 5.0;
-const CAMERA_MARGIN_Y: f32 = 5.0;
+const CAMERA_MARGIN_X: f64 = 5.0;
+const CAMERA_MARGIN_Y: f64 = 5.0;
 
 struct Character {
     player: usize,
-    dir: f32,
+    dir: f64,
     jump: bool,
     sprite_sheet: Rc<SpriteSheet>,
 }
@@ -43,9 +43,9 @@ impl Character {
     }
 }
 
-const CHAR_W: f32 = 0.63;
-const CHAR_H: f32 = 1.29;
-const MARGIN: f32 = 0.05;
+const CHAR_W: f64 = 0.63;
+const CHAR_H: f64 = 1.29;
+const MARGIN: f64 = 0.05;
 
 impl EntityLogic for Character {
     fn update(&mut self, entity: &mut EntityPhysics, dt: f64,
@@ -79,13 +79,13 @@ impl EntityLogic for Character {
             }
         } else {
             if entity.speed.x() * self.dir.signum() < self.dir.abs() * 5.0 {
-                entity.speed[0] += self.dir * 20.0 * dt as f32;
+                entity.speed[0] += self.dir * 20.0 * dt;
             }
-            entity.speed[1] += -10.0 * dt as f32;
+            entity.speed[1] += -10.0 * dt;
         }
 
         let dir = entity.speed.x().signum();
-        for height in [-1.0f32, 1.0].iter() {
+        for height in [-1.0f64, 1.0].iter() {
             if let Some(tile) = world.map.tilef(entity.pos.x() + (CHAR_W / 2. + MARGIN) * dir,
                                                 entity.pos.y() - (CHAR_H / 2. - MARGIN) * height) {
                 if tile.collide {
@@ -97,7 +97,7 @@ impl EntityLogic for Character {
             }
         }
 
-        entity.pos = vec2_add(entity.pos, vec2_scale(entity.speed, dt as f32));
+        entity.pos = vec2_add(entity.pos, vec2_scale(entity.speed, dt));
 
         // Set sprite
         // TODO: Animation
@@ -149,10 +149,10 @@ impl Spawnable for SimpleSpawn {
 }
 
 struct Camera {
-    aspect_ratio: f32,
+    aspect_ratio: f64,
     pos: Vector2,
-    size: f32,
-    update_rate: f32,
+    size: f64,
+    update_rate: f64,
 }
 
 pub struct Game {
@@ -179,7 +179,7 @@ impl Game {
         let mut game = Game {
             world: world,
             camera: Camera {
-                aspect_ratio: window_size.height as f32 / window_size.width as f32,
+                aspect_ratio: window_size.height as f64 / window_size.width as f64,
                 pos: [0.0, 0.0],
                 size: 10.0,
                 update_rate: 1.0,
@@ -242,7 +242,7 @@ impl GameState for Game {
 
             // Compute desired camera position
             let ratio = camera.aspect_ratio;
-            let size = (b.x() - a.x()).max((b.y() - a.y())/ratio as f32);
+            let size = (b.x() - a.x()).max((b.y() - a.y())/ratio);
             let pos = [(a.x() + b.x() - size)/2.0,
                        (a.y() + b.y() - size * ratio)/2.0];
 
@@ -274,7 +274,7 @@ impl GameState for Game {
             .trans(0.0, height as f64)
             .scale(1.0, -1.0)
             .scale(zoom, zoom)
-            .trans(-self.camera.pos.x() as f64, -self.camera.pos.y() as f64);
+            .trans(-self.camera.pos.x(), -self.camera.pos.y());
 
         let x1 = max(self.camera.pos.x() as i32 - 1, 0);
         let y1 = max(self.camera.pos.y() as i32 - 1, 0);
@@ -289,8 +289,8 @@ impl GameState for Game {
                 if let Some(ref sprite) = self.world.map.tile(x, y).unwrap().sprite {
                     let image = Image::new()
                         .src_rect(sprite.coords)
-                        .rect([(x as f32 + 0.5 - sprite.size[0] / 2.0) as f64,
-                               (y as f32 + 0.5 + sprite.size[1] / 2.0) as f64,
+                        .rect([(x as f64 + 0.5 - sprite.size[0] / 2.0),
+                               (y as f64 + 0.5 + sprite.size[1] / 2.0),
                                sprite.size[0] as f64,
                                -sprite.size[1] as f64]);
                     image.draw(&sprite.sheet.texture, &DrawState::default(),
@@ -318,10 +318,10 @@ impl GameState for Game {
             if let Some(ref sprite) = entity.sprite {
                 let image = Image::new()
                     .src_rect(sprite.coords)
-                    .rect([(entity.physics.pos.x() - sprite.size[0] / 2.0) as f64,
-                           (entity.physics.pos.y() + sprite.size[1] / 2.0) as f64,
-                           sprite.size[0] as f64,
-                           -sprite.size[1] as f64]);
+                    .rect([(entity.physics.pos.x() - sprite.size[0] / 2.0),
+                           (entity.physics.pos.y() + sprite.size[1] / 2.0),
+                           sprite.size[0],
+                           -sprite.size[1]]);
                 image.draw(&sprite.sheet.texture, &DrawState::default(),
                            transform, g);
             } else {
@@ -330,7 +330,7 @@ impl GameState for Game {
                     [1.0, 0.0, 0.0, 1.0],
                     0.05, 0.0, 2.0 * ::std::f64::consts::PI);
                 circle.draw(
-                    rectangle::centered([entity.physics.pos.x() as f64, entity.physics.pos.y() as f64, 0.5, 0.5]),
+                    rectangle::centered([entity.physics.pos.x(), entity.physics.pos.y(), 0.5, 0.5]),
                     &DrawState::default(), transform, g);
             }
         }

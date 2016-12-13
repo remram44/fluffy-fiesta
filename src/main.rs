@@ -90,7 +90,7 @@ impl App {
         // Create an SDL2 window.
         let window: Window = WindowSettings::new(
                 "fluffy-fiesta",
-                [width, height]
+                [width, height],
             )
             .opengl(opengl)
             .build()

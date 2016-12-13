@@ -1,11 +1,11 @@
+use std::cmp::{max, min};
+use std::fmt::{self, Debug, Formatter};
+use std::rc::Rc;
+
 use piston;
 use piston::input::*;
 use piston::window::{AdvancedWindow, Window};
 use piston_window::{Context, G2d};
-
-use std::cmp::{max, min};
-use std::fmt::{self, Debug, Formatter};
-use std::rc::Rc;
 
 use {GameState, Resources, StateTransition};
 use sprites::{Sprite, SpriteSheet};

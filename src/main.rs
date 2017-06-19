@@ -1,5 +1,6 @@
 #[macro_use] extern crate conrod;
 extern crate env_logger;
+extern crate gfx_core;
 extern crate graphics;
 #[macro_use] extern crate log;
 extern crate piston;
@@ -10,6 +11,7 @@ extern crate vecmath as vecmath_lib;
 use std::fmt::Debug;
 use std::rc::Rc;
 
+use gfx_core::Device;
 use piston::window::WindowSettings;
 use piston_window::{Context, G2d, OpenGL, PistonWindow};
 use piston::event_loop::*;
@@ -172,6 +174,7 @@ impl App {
 
             // Call draw method
             resources.window.draw_2d(&event, |c, g| state.draw(c, g));
+            resources.window.device.cleanup();
         }
         info!("Stopping {:?}", state);
         state.pause(resources);

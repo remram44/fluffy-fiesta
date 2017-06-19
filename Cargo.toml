@@ -23,6 +23,7 @@ piston2d-graphics = "0.21"
 piston_window = "0.66"
 
 # Concrete graphics
+gfx_core = "0.7"
 pistoncore-sdl2_window = "0.43"
 sdl2 = "0.30"
 

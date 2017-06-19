@@ -9,7 +9,7 @@ use piston_window::texture::ImageSize;
 use ::Window;
 
 pub struct SpriteSheet {
-    pub texture: piston_window::G2dTexture<'static>,
+    pub texture: piston_window::G2dTexture,
     width: usize,
     height: usize,
 }
@@ -34,7 +34,7 @@ impl SpriteSheet {
 
 pub struct Sprite {
     pub sheet: Rc<SpriteSheet>,
-    pub coords: [i32; 4],
+    pub coords: [f64; 4],
     pub size: [f64; 2],
 }
 

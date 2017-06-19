@@ -150,7 +150,7 @@ pub struct TileTypeDefinition {
     /// Image file.
     pub sprite_sheet: &'static str,
     /// Coordinates of sprite within image file.
-    pub sprite_coords: [i32; 4],
+    pub sprite_coords: [f64; 4],
     /// Damage suffered from touching that tile.
     pub damage: f64,
     /// Whether entities will collide with that tile, or pass through.
@@ -209,7 +209,7 @@ impl MapFactory {
                 // Wall
                 TileTypeDefinition {
                     sprite_sheet: "map/castleCenter.png",
-                    sprite_coords: [0, 0, 256, 256],
+                    sprite_coords: [0., 0., 256., 256.],
                     damage: 0.0,
                     collide: true,
                     tile_entity: None,
@@ -217,7 +217,7 @@ impl MapFactory {
                 // Background
                 TileTypeDefinition {
                     sprite_sheet: "map/bg_castle.png",
-                    sprite_coords: [0, 0, 256, 256],
+                    sprite_coords: [0., 0., 256., 256.],
                     damage: 0.0,
                     collide: false,
                     tile_entity: None,
@@ -225,7 +225,7 @@ impl MapFactory {
                 // Sky
                 TileTypeDefinition {
                     sprite_sheet: "map/bg.png",
-                    sprite_coords: [0, 0, 256, 256],
+                    sprite_coords: [0., 0., 256., 256.],
                     damage: 0.0,
                     collide: false,
                     tile_entity: None,
@@ -233,7 +233,7 @@ impl MapFactory {
                 // Lava
                 TileTypeDefinition {
                     sprite_sheet: "map/liquidLava.png",
-                    sprite_coords: [0, 0, 256, 256],
+                    sprite_coords: [0., 0., 256., 256.],
                     damage: 1.0,
                     collide: false,
                     tile_entity: None,

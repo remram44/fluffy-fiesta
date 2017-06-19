@@ -103,7 +103,7 @@ impl EntityLogic for Character {
         // TODO: Animation
         *sprite = Some(Sprite {
             sheet: self.sprite_sheet.clone(),
-            coords: [0, 0, 213, 428],
+            coords: [0., 0., 213., 428.],
             size: [CHAR_W, CHAR_H],
         });
 
@@ -204,7 +204,7 @@ impl Debug for Game {
 }
 
 impl GameState for Game {
-    fn handle_event(&mut self, event: &piston::input::Event<piston::input::Input>,
+    fn handle_event(&mut self, event: &piston::input::Input,
                     resources: &mut Resources) -> StateTransition
     {
         if let Some(Button::Keyboard(key)) = event.press_args() {

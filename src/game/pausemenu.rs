@@ -4,7 +4,8 @@ use std::path::Path;
 use conrod::{self, Labelable, Positionable, Sizeable, Widget};
 use piston;
 use piston::window::Window;
-use piston_window::{self, Context, G2d};
+use piston_window::{self, Context, G2d, G2dTexture};
+use piston_window::texture::UpdateTexture;
 
 use ::{GameState, Resources, StateTransition};
 
@@ -13,8 +14,10 @@ widget_ids!(struct GameWidgetIds { canvas, resume, quit });
 pub struct PauseMenu {
     ui: conrod::Ui,
     widget_ids: GameWidgetIds,
-    image_map: conrod::image::Map<piston_window::G2dTexture<'static>>,
-    text_texture_cache: conrod::backend::piston_window::GlyphCache,
+    image_map: conrod::image::Map<G2dTexture>,
+    glyph_cache: conrod::text::GlyphCache,
+    text_texture_cache: G2dTexture,
+    text_vertex_data: Vec<u8>,
 }
 
 impl Debug for PauseMenu {
@@ -25,8 +28,12 @@ impl Debug for PauseMenu {
 
 impl PauseMenu {
     pub fn new(resources: &mut Resources) -> PauseMenu {
+        let window_size = resources.window.size();
+
         // Construct our `Ui`.
-        let mut ui = conrod::UiBuilder::new().build();
+        let mut ui = conrod::UiBuilder::new([window_size.width as f64,
+                                             window_size.height as f64])
+            .build();
 
         // Generate the widget identifiers.
         let ids = GameWidgetIds::new(ui.widget_id_generator());
@@ -37,11 +44,19 @@ impl PauseMenu {
         ui.fonts.insert_from_file(font_path).unwrap();
 
         // Create a texture to use for efficiently caching text on the GPU.
-        let window_size = resources.window.size();
-        let text_texture_cache =
-            conrod::backend::piston_window::GlyphCache::new(&mut resources.window,
-                                                            window_size.width,
-                                                            window_size.height);
+        let (glyph_cache, text_texture_cache) = {
+            let cache =
+                conrod::text::GlyphCache::new(window_size.width,
+                                              window_size.height,
+                                              0.1, 0.1);
+            let buffer_len = window_size.width as usize * window_size.height as usize;
+            let init = vec![128; buffer_len];
+            let settings = piston_window::TextureSettings::new();
+            let factory = &mut resources.window.factory;
+            let texture = G2dTexture::from_memory_alpha(
+                factory, &init, window_size.width, window_size.height, &settings).unwrap();
+            (cache, texture)
+        };
 
         // The image map describing each of our widget->image mappings (in our case, none).
         let image_map = conrod::image::Map::new();
@@ -50,17 +65,22 @@ impl PauseMenu {
             ui: ui,
             widget_ids: ids,
             image_map: image_map,
+            glyph_cache: glyph_cache,
             text_texture_cache: text_texture_cache,
+            text_vertex_data: Vec::new(),
         }
     }
 }
 
 impl GameState for PauseMenu {
-    fn handle_event(&mut self, event: &piston::input::Event<piston::input::Input>,
+    fn handle_event(&mut self, event: &piston::input::Input,
                     resources: &mut Resources) -> StateTransition
     {
         // Convert the piston event to a conrod event.
-        if let Some(ce) = conrod::backend::piston_window::convert_event(event.clone(), &mut resources.window) {
+        let window_size = resources.window.size();
+        if let Some(ce) = conrod::backend::piston::event::convert(
+            event.clone(), window_size.width as f64, window_size.height as f64)
+        {
             self.ui.handle_event(ce);
         }
 
@@ -98,10 +118,32 @@ impl GameState for PauseMenu {
 
     fn draw(&mut self, c: Context, g: &mut G2d) {
         let primitives = self.ui.draw();
+
+        let text_vertex_data = &mut self.text_vertex_data;
+        let cache_queued_glyphs = |graphics: &mut G2d,
+                                   cache: &mut G2dTexture,
+                                   rect: conrod::text::rt::Rect<u32>,
+                                   data: &[u8]|
+        {
+            let offset = [rect.min.x, rect.min.y];
+            let size = [rect.width(), rect.height()];
+            let format = piston_window::texture::Format::Rgba8;
+            let encoder = &mut graphics.encoder;
+            text_vertex_data.clear();
+            text_vertex_data.extend(
+                data.iter().flat_map(|&b| vec![255, 255, 255, b]));
+            UpdateTexture::update(cache, encoder, format,
+                                  &text_vertex_data[..], offset, size)
+                .expect("failed to update texture")
+        };
+
         fn texture_from_image<T>(img: &T) -> &T { img };
-        conrod::backend::piston_window::draw(c, g, primitives,
-                                             &mut self.text_texture_cache,
-                                             &self.image_map,
-                                             texture_from_image);
+
+        conrod::backend::piston::draw::primitives(primitives, c, g,
+                                                  &mut self.text_texture_cache,
+                                                  &mut self.glyph_cache,
+                                                  &self.image_map,
+                                                  cache_queued_glyphs,
+                                                  texture_from_image);
     }
 }

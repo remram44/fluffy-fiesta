@@ -73,7 +73,7 @@ impl PauseMenu {
 }
 
 impl GameState for PauseMenu {
-    fn handle_event(&mut self, event: &piston::input::Input,
+    fn handle_event(&mut self, event: &piston::input::Event,
                     resources: &mut Resources) -> StateTransition
     {
         // Convert the piston event to a conrod event.

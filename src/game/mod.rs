@@ -204,7 +204,7 @@ impl Debug for Game {
 }
 
 impl GameState for Game {
-    fn handle_event(&mut self, event: &piston::input::Input,
+    fn handle_event(&mut self, event: &piston::input::Event,
                     resources: &mut Resources) -> StateTransition
     {
         if let Some(Button::Keyboard(key)) = event.press_args() {

@@ -17,14 +17,14 @@ log = "0.3"
 vecmath = "0.3"
 
 # Abstract graphics
-conrod = { version = "0.53", features = ["piston"] }
-piston = "0.32"
-piston2d-graphics = "0.21"
-piston_window = "0.66"
+conrod = { version = "0.56", features = ["piston"] }
+piston = "0.35"
+piston2d-graphics = "0.23"
+piston_window = "0.73"
 
 # Concrete graphics
 gfx_core = "0.7"
-pistoncore-sdl2_window = "0.43"
+pistoncore-sdl2_window = "0.46"
 sdl2 = "0.30"
 
 [features]

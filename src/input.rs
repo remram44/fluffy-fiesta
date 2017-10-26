@@ -65,7 +65,7 @@ impl InputManager {
         }
     }
 
-    pub fn handle_event(&mut self, event: &piston::input::Input) {
+    pub fn handle_event(&mut self, event: &piston::input::Event) {
         if let Some((key, pressed)) = if let Some(Button::Keyboard(key)) = event.press_args() {
             info!("Pressed key '{:?}'", key);
             Some((key, true))

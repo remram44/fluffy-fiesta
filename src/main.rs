@@ -53,7 +53,7 @@ pub enum StateTransition {
 /// itself; starting the game finishes the character selection, but the main
 /// menu remains accessible.
 pub trait GameState : Debug {
-    fn handle_event(&mut self, event: &piston::input::Input,
+    fn handle_event(&mut self, event: &piston::input::Event,
                     resources: &mut Resources) -> StateTransition
     {
         StateTransition::Continue
@@ -148,8 +148,7 @@ impl App {
         info!("Executing {:?}", state);
         state.resume(resources);
 
-        let mut events = resources.window.events;
-        while let Some(event) = events.next(&mut resources.window) {
+        while let Some(event) = resources.window.next() {
             // Handle generic event
             let transition = state.handle_event(&event, resources);
             match transition {

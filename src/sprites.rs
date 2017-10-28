@@ -8,6 +8,7 @@ use piston_window::texture::ImageSize;
 
 use ::Window;
 
+#[derive(Debug)]
 pub struct SpriteSheet {
     pub texture: piston_window::G2dTexture,
     width: usize,
@@ -32,7 +33,7 @@ impl SpriteSheet {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Sprite {
     pub sheet: Rc<SpriteSheet>,
     pub coords: [f64; 4],

@@ -87,21 +87,21 @@ impl GameState for PauseMenu {
         let ui = &mut self.ui.set_widgets();
 
         // Create a background canvas upon which we'll place the button.
-        conrod::widget::Canvas::new().floating(true).w_h(100.0, 70.0).pad(10.0).middle()
+        conrod::widget::Canvas::new().floating(true).w_h(100.0, 85.0).pad(10.0).middle()
             .set(self.widget_ids.canvas, ui);
 
         // Draw the buttons.
         if conrod::widget::Button::new()
             .mid_top_of(self.widget_ids.canvas)
-            .w_h(80.0, 20.0)
+            .w_h(80.0, 25.0)
             .label("Resume")
             .set(self.widget_ids.resume, ui)
             .was_clicked()
         {
             StateTransition::End
         } else if conrod::widget::Button::new()
-            .down(10.0)
-            .w_h(80.0, 20.0)
+            .down(15.0)
+            .w_h(80.0, 25.0)
             .label("Quit")
             .set(self.widget_ids.quit, ui)
             .was_clicked()

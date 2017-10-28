@@ -14,7 +14,6 @@ use std::rc::Rc;
 use gfx_core::Device;
 use piston::window::WindowSettings;
 use piston_window::{Context, G2d, OpenGL, PistonWindow};
-use piston::event_loop::*;
 use piston::input::*;
 use sdl2_window::Sdl2Window;
 

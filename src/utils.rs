@@ -17,6 +17,8 @@ pub fn one_rest_split_iter<T, F>(mut vec: &mut Vec<T>, mut f: F) where F: FnMut(
 mod tests {
     use std::fmt;
 
+    use super::one_rest_split_iter;
+
     struct NonTrivialThing {
         i: i32,
     }

@@ -171,8 +171,10 @@ impl App {
             }
 
             // Call draw method
-            resources.window.draw_2d(&event, |c, g| state.draw(c, g));
-            resources.window.device.cleanup();
+            if let Some(r) = event.render_args() {
+                resources.window.draw_2d(&event, |c, g| state.draw(c, g));
+                resources.window.device.cleanup();
+            }
         }
         info!("Stopping {:?}", state);
         state.pause(resources);

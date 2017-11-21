@@ -224,7 +224,7 @@ impl GameState for Game {
         let map = &mut self.world.map;
         let spawnables = &mut self.world.spawnables;
         let mut focus = None;
-        one_rest_split_iter(&mut self.world.entities, |mut entity, other_entities| {
+        one_rest_split_iter(&mut self.world.entities, |entity, other_entities| {
             let mut world_view = WorldView {
                 map: map,
                 entities: other_entities,

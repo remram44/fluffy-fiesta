@@ -13,8 +13,6 @@ use utils::one_rest_split_iter;
 use vecmath::*;
 use world::{Entity, EntityLogic, EntityPhysics, MapFactory, Spawnable, World, WorldView};
 
-mod pausemenu;
-
 const CAMERA_MARGIN_X: f64 = 5.0;
 const CAMERA_MARGIN_Y: f64 = 5.0;
 
@@ -209,7 +207,7 @@ impl GameState for Game {
     {
         if let Some(Button::Keyboard(key)) = event.press_args() {
             if key == Key::Escape {
-                return StateTransition::Push(Box::new(pausemenu::PauseMenu::new(resources)));
+                return StateTransition::End;
             }
         }
 

@@ -1,20 +1,20 @@
 #[macro_use] extern crate conrod;
 extern crate env_logger;
-extern crate gfx_core;
+extern crate opengl_graphics;
 extern crate graphics;
 #[macro_use] extern crate log;
 extern crate piston;
-extern crate piston_window;
 extern crate sdl2_window;
 extern crate vecmath as vecmath_lib;
 
 use std::fmt::Debug;
 use std::rc::Rc;
 
-use gfx_core::Device;
-use piston::window::WindowSettings;
-use piston_window::{Context, G2d, OpenGL, PistonWindow};
+use graphics::Context;
+use opengl_graphics::{GlGraphics, OpenGL};
+use piston::event_loop::{Events, EventSettings};
 use piston::input::*;
+use piston::window::WindowSettings;
 use sdl2_window::Sdl2Window;
 
 mod entities;
@@ -27,8 +27,6 @@ mod world;
 
 use input::InputManager;
 use sprites::{SpriteManager, SpriteSheet};
-
-type Window = PistonWindow<Sdl2Window>;
 
 /// A transition requested by a game state.
 pub enum StateTransition {
@@ -58,20 +56,21 @@ pub trait GameState : Debug {
         StateTransition::Continue
     }
     fn update(&mut self, dt: f64, resources: &mut Resources) -> StateTransition;
-    fn draw(&mut self, c: Context, g: &mut G2d);
+    fn draw(&mut self, c: Context, g: &mut GlGraphics);
     fn pause(&mut self, resources: &mut Resources) {}
     fn resume(&mut self, resources: &mut Resources) {}
 }
 
 pub struct Resources {
-    window: Window,
+    window: Sdl2Window,
+    gl: GlGraphics,
     input_manager: InputManager,
     sprite_manager: SpriteManager,
 }
 
 impl Resources {
     pub fn load_spritesheet(&mut self, name: &str) -> Rc<SpriteSheet> {
-        self.sprite_manager.load(&mut self.window, name)
+        self.sprite_manager.load(name)
     }
 }
 
@@ -89,7 +88,7 @@ impl App {
         let opengl = OpenGL::V3_2;
 
         // Create an SDL2 window.
-        let window: Window = WindowSettings::new(
+        let window: Sdl2Window = WindowSettings::new(
                 "fluffy-fiesta",
                 [width, height],
             )
@@ -102,6 +101,7 @@ impl App {
             states: Vec::new(),
             resources: Resources {
                 window: window,
+                gl: GlGraphics::new(opengl),
                 input_manager: InputManager::new(),
                 sprite_manager: SpriteManager::new(),
             },
@@ -147,7 +147,8 @@ impl App {
         info!("Executing {:?}", state);
         state.resume(resources);
 
-        while let Some(event) = resources.window.next() {
+        let mut events = Events::new(EventSettings::new());
+        while let Some(event) = events.next(&mut resources.window) {
             // Handle generic event
             let transition = state.handle_event(&event, resources);
             match transition {
@@ -172,8 +173,7 @@ impl App {
 
             // Call draw method
             if let Some(r) = event.render_args() {
-                resources.window.draw_2d(&event, |c, g| state.draw(c, g));
-                resources.window.device.cleanup();
+                resources.gl.draw(r.viewport(), |c, g| state.draw(c, g));
             }
         }
         info!("Stopping {:?}", state);

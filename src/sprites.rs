@@ -3,25 +3,20 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::rc::{Rc, Weak};
 
-use piston_window;
-use piston_window::texture::ImageSize;
-
-use ::Window;
+use graphics::ImageSize;
+use opengl_graphics::{Texture, TextureSettings};
 
 pub struct SpriteSheet {
-    pub texture: piston_window::G2dTexture,
+    pub texture: Texture,
     width: usize,
     height: usize,
 }
 
 impl SpriteSheet {
-    fn from_file(window: &mut Window, name: &str) -> Result<SpriteSheet, String> {
+    fn from_file(name: &str) -> Result<SpriteSheet, String> {
         let texture = try!(
-            piston_window::Texture::from_path(
-                &mut window.factory,
-                &Path::new("assets").join(name),
-                piston_window::Flip::None,
-                &piston_window::TextureSettings::new()));
+            Texture::from_path(&Path::new("assets").join(name),
+                               &TextureSettings::new()));
         let width = texture.get_size().0 as usize;
         let height = texture.get_size().1 as usize;
         Ok(SpriteSheet {
@@ -49,7 +44,7 @@ impl SpriteManager {
         }
     }
 
-    pub fn load(&self, window: &mut Window, name: &str) -> Rc<SpriteSheet> {
+    pub fn load(&self, name: &str) -> Rc<SpriteSheet> {
         if let Some(sheet) = self.sprites.borrow().get(name) {
             if let Some(sheet) = sheet.upgrade() {
                 return sheet;
@@ -58,7 +53,7 @@ impl SpriteManager {
             }
         }
 
-        let sheet = Rc::new(SpriteSheet::from_file(window, name).unwrap());
+        let sheet = Rc::new(SpriteSheet::from_file(name).unwrap());
         self.sprites.borrow_mut().insert(name.to_owned(), Rc::downgrade(&sheet));
         sheet
     }

@@ -2,10 +2,11 @@ use std::cmp::{max, min};
 use std::fmt::{self, Debug, Formatter};
 use std::rc::Rc;
 
+use graphics::Context;
+use opengl_graphics::GlGraphics;
 use piston;
 use piston::input::*;
 use piston::window::{AdvancedWindow, Window};
-use piston_window::{Context, G2d};
 
 use {GameState, Resources, StateTransition};
 use sprites::{Sprite, SpriteSheet};
@@ -253,7 +254,7 @@ impl GameState for Game {
         StateTransition::Continue
     }
 
-    fn draw(&mut self, c: Context, g: &mut G2d) {
+    fn draw(&mut self, c: Context, g: &mut GlGraphics) {
         use graphics::*;
 
         let (width, height) = if let Some(v) = c.viewport {

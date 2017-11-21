@@ -2,10 +2,9 @@ use std::fmt::{self, Debug, Formatter};
 use std::path::Path;
 
 use conrod::{self, Labelable, Positionable, Sizeable, Widget};
+use graphics::Context;
 use piston;
 use piston::window::Window;
-use piston_window::{self, Context, G2d, G2dTexture};
-use piston_window::texture::UpdateTexture;
 
 use ::{GameState, Resources, StateTransition};
 

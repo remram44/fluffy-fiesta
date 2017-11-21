@@ -3,8 +3,10 @@ use std::path::Path;
 
 use conrod::{self, Labelable, Positionable, Sizeable, Widget};
 use graphics::Context;
+use opengl_graphics::{GlGraphics, Texture, TextureSettings};
 use piston;
 use piston::window::Window;
+use texture::{self, UpdateTexture};
 
 use ::{GameState, Resources, StateTransition};
 
@@ -13,9 +15,9 @@ widget_ids!(struct GameWidgetIds { canvas, resume, quit });
 pub struct PauseMenu {
     ui: conrod::Ui,
     widget_ids: GameWidgetIds,
-    image_map: conrod::image::Map<G2dTexture>,
+    image_map: conrod::image::Map<Texture>,
     glyph_cache: conrod::text::GlyphCache,
-    text_texture_cache: G2dTexture,
+    text_texture_cache: Texture,
     text_vertex_data: Vec<u8>,
 }
 
@@ -50,10 +52,9 @@ impl PauseMenu {
                                               0.1, 0.1);
             let buffer_len = window_size.width as usize * window_size.height as usize;
             let init = vec![128; buffer_len];
-            let settings = piston_window::TextureSettings::new();
-            let factory = &mut resources.window.factory;
-            let texture = G2dTexture::from_memory_alpha(
-                factory, &init, window_size.width, window_size.height, &settings).unwrap();
+            let settings = TextureSettings::new();
+            let texture = Texture::from_memory_alpha(
+                &init, window_size.width, window_size.height, &settings).unwrap();
             (cache, texture)
         };
 
@@ -115,23 +116,22 @@ impl GameState for PauseMenu {
         StateTransition::Continue
     }
 
-    fn draw(&mut self, c: Context, g: &mut G2d) {
+    fn draw(&mut self, c: Context, g: &mut GlGraphics) {
         let primitives = self.ui.draw();
 
         let text_vertex_data = &mut self.text_vertex_data;
-        let cache_queued_glyphs = |graphics: &mut G2d,
-                                   cache: &mut G2dTexture,
+        let cache_queued_glyphs = |graphics: &mut GlGraphics,
+                                   cache: &mut Texture,
                                    rect: conrod::text::rt::Rect<u32>,
                                    data: &[u8]|
         {
             let offset = [rect.min.x, rect.min.y];
             let size = [rect.width(), rect.height()];
-            let format = piston_window::texture::Format::Rgba8;
-            let encoder = &mut graphics.encoder;
+            let format = texture::Format::Rgba8;
             text_vertex_data.clear();
             text_vertex_data.extend(
                 data.iter().flat_map(|&b| vec![255, 255, 255, b]));
-            UpdateTexture::update(cache, encoder, format,
+            UpdateTexture::update(cache, &mut (), format,
                                   &text_vertex_data[..], offset, size)
                 .expect("failed to update texture")
         };

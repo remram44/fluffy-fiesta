@@ -6,6 +6,7 @@ extern crate image;
 #[macro_use] extern crate log;
 extern crate piston;
 extern crate sdl2_window;
+extern crate texture;
 extern crate vecmath as vecmath_lib;
 
 use std::fmt::Debug;

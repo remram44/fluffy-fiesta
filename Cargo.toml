@@ -20,6 +20,7 @@ vecmath = "0.3"
 # Abstract graphics
 conrod = { version = "0.56", features = ["piston"] }
 piston = "0.35"
+piston-texture = "*"
 piston2d-graphics = "0.23"
 image = "*"
 

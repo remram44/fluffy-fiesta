@@ -2,6 +2,7 @@
 extern crate env_logger;
 extern crate opengl_graphics;
 extern crate graphics;
+extern crate image;
 #[macro_use] extern crate log;
 extern crate piston;
 extern crate sdl2_window;

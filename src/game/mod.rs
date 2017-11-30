@@ -209,7 +209,8 @@ impl GameState for Game {
     {
         if let Some(Button::Keyboard(key)) = event.press_args() {
             if key == Key::Escape {
-                return StateTransition::Push(Box::new(pausemenu::PauseMenu::new(resources)));
+                return StateTransition::Push(Box::new(
+                    pausemenu::PauseMenu::new(resources)));
             }
         }
 

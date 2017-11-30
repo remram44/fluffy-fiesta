@@ -51,7 +51,7 @@ pub enum StateTransition {
 /// Examples of states are the main menu, the character selection, or the game
 /// itself; starting the game finishes the character selection, but the main
 /// menu remains accessible.
-pub trait GameState : Debug {
+pub trait GameState: Debug {
     fn handle_event(&mut self, event: &piston::input::Event,
                     resources: &mut Resources) -> StateTransition
     {
